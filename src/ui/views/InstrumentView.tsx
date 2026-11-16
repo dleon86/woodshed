@@ -1,6 +1,9 @@
+import { useEffect } from 'preact/hooks';
+import { audioSupported } from '../../audio/player';
 import type { Show } from '../../cards';
 import { fretPositions, placeNotes, uniqueNotes, writtenPitch } from '../../instruments';
 import { profile, view } from '../../state/session';
+import { droneFor, droneOn, micState, playShow, playing, stopPlaying, toggleDrone } from '../../state/sound';
 import {
   LABEL_STYLES,
   type LabelStyle,
@@ -11,7 +14,7 @@ import {
   leftHanded,
   pinStaff,
 } from '../../state/views';
-import { midi, noteName } from '../../theory';
+import { midi, noteId, noteName } from '../../theory';
 import { Fretboard } from './Fretboard';
 import { Keyboard } from './Keyboard';
 import { Staff } from './Staff';
@@ -34,6 +37,17 @@ export function InstrumentView({ show }: { show?: Show | undefined }) {
   const active = view.value;
   const p = profile.value;
   const style = labelStyle.value;
+
+  // Sound follows the answer on screen: a new card (or none) ends the old card's playback,
+  // and the drone moves to the new root (A-5).
+  const answer = show ? `${show.kind}:${show.notes.map(noteId).join(' ')}:${noteId(show.root)}` : '';
+  const drone = droneOn.value;
+  useEffect(() => {
+    droneFor(show);
+    return stopPlaying;
+  }, [answer, drone, p.id]);
+  useEffect(() => () => droneFor(undefined), []);
+  const listening = micState.value === 'listening' || micState.value === 'asking';
   const placed = show ? placeNotes(show.notes, p, activeRange.value) : [];
   const describe = (i: number) => {
     const n = show!.notes[i]!;
@@ -95,16 +109,37 @@ export function InstrumentView({ show }: { show?: Show | undefined }) {
             </button>
           ))}
         </div>
-        {active !== 'staff' && (
+        <div class="view-buttons">
+          <button
+            type="button"
+            class="chip compact play"
+            disabled={!show || listening || !audioSupported}
+            title={audioSupported ? undefined : 'This browser cannot play sound'}
+            onClick={() => (playing.value ? stopPlaying() : show && playShow(show))}
+          >
+            {playing.value ? '■ Stop' : '▶ Play'}
+          </button>
           <button
             type="button"
             class="chip compact"
-            aria-pressed={pinStaff.value}
-            onClick={() => (pinStaff.value = !pinStaff.value)}
+            aria-pressed={drone}
+            disabled={listening || !audioSupported}
+            title="Hold the root note while you play"
+            onClick={toggleDrone}
           >
-            Pin staff
+            Drone
           </button>
-        )}
+          {active !== 'staff' && (
+            <button
+              type="button"
+              class="chip compact"
+              aria-pressed={pinStaff.value}
+              onClick={() => (pinStaff.value = !pinStaff.value)}
+            >
+              Pin staff
+            </button>
+          )}
+        </div>
       </div>
       <div class="view-main">{main}</div>
       {/* V-6: the pinned staff shows the same notes alongside the keyboard or fretboard. */}

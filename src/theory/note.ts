@@ -64,6 +64,28 @@ export function midi(p: Pitch): number {
   return 12 * (p.octave + 1) + LETTER_SEMITONES[p.letter] + p.alter;
 }
 
+/* ---------- Frequency (A-6: adjustable reference pitch) ---------- */
+
+/** Frequency in Hz of a MIDI number in equal temperament. `reference` is A4. */
+export function midiToFrequency(midiNumber: number, reference = 440): number {
+  return reference * 2 ** ((midiNumber - 69) / 12);
+}
+
+/** Fractional MIDI number of a frequency: 60.5 is a quarter tone above middle C. */
+export function frequencyToMidi(hz: number, reference = 440): number {
+  return 69 + 12 * Math.log2(hz / reference);
+}
+
+/** Sharp and flat names for the 12 pitch classes, for naming a heard pitch. */
+const SHARP_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const FLAT_NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+/** A pitch for a MIDI number, spelled with sharps or flats (a tuner has no key to spell from). */
+export function pitchFromMidi(midiNumber: number, prefer: 'sharp' | 'flat' = 'sharp'): Pitch {
+  const name = (prefer === 'sharp' ? SHARP_NAMES : FLAT_NAMES)[mod(midiNumber, 12)]!;
+  return { ...parseNote(name), octave: Math.floor(midiNumber / 12) - 1 };
+}
+
 /* ---------- Text ---------- */
 
 const SYMBOL = { sharp: '♯', flat: '♭', doubleSharp: '𝄪', doubleFlat: '𝄫', natural: '♮' };

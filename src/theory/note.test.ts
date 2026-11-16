@@ -2,13 +2,16 @@ import { describe, expect, it } from 'vitest';
 import {
   LETTERS,
   accidentalSymbol,
+  frequencyToMidi,
   isEnharmonic,
   midi,
+  midiToFrequency,
   noteId,
   noteName,
   parseNote,
   parsePitch,
   pitchClass,
+  pitchFromMidi,
   pitchName,
 } from './note';
 
@@ -67,5 +70,28 @@ describe('pitch classes and MIDI', () => {
     expect(midi(parsePitch('Cb4'))).toBe(59);
     expect(midi(parsePitch('E1'))).toBe(28); // bass low E
     expect(pitchName(parsePitch('Eb2'))).toBe('E♭2');
+  });
+});
+
+describe('frequency (A-6)', () => {
+  it('converts MIDI to Hz and back at any reference pitch', () => {
+    expect(midiToFrequency(69)).toBe(440);
+    expect(midiToFrequency(69, 442)).toBe(442);
+    expect(midiToFrequency(57)).toBeCloseTo(220, 6);
+    expect(midiToFrequency(28)).toBeCloseTo(41.203, 2); // bass low E (P-2)
+    expect(midiToFrequency(60)).toBeCloseTo(261.626, 2);
+    for (let m = 21; m <= 108; m++) expect(frequencyToMidi(midiToFrequency(m, 437), 437)).toBeCloseTo(m, 9);
+    expect(frequencyToMidi(440 * 2 ** (0.5 / 12))).toBeCloseTo(69.5, 9); // 50 cents sharp
+  });
+
+  it('names a MIDI number with sharps or flats', () => {
+    expect(pitchName(pitchFromMidi(60))).toBe('C4');
+    expect(pitchName(pitchFromMidi(61))).toBe('C♯4');
+    expect(pitchName(pitchFromMidi(61, 'flat'))).toBe('D♭4');
+    expect(pitchName(pitchFromMidi(28))).toBe('E1');
+    for (let m = 21; m <= 108; m++) {
+      expect(midi(pitchFromMidi(m))).toBe(m);
+      expect(midi(pitchFromMidi(m, 'flat'))).toBe(m);
+    }
   });
 });

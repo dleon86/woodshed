@@ -100,13 +100,13 @@ function hasNumeral(iv: Interval, direction: Direction): boolean {
 
 /** A scale, degrees 1–8, with its key signature. */
 function scaleShow(s: Scale, focus?: Note): Show {
-  return { notes: s.degrees.map((d) => d.note), root: s.tonic, key: s.key, ...(focus ? { focus } : {}) };
+  return { kind: 'scale', notes: s.degrees.map((d) => d.note), root: s.tonic, key: s.key, ...(focus ? { focus } : {}) };
 }
 
 /** Two notes, lower first. Labels count from the lower note, so a 5th reads as 1 and 5 either way. */
 function intervalShow(from: Note, to: Note, direction: Direction): Show {
   const notes = direction === 'up' ? [from, to] : [to, from];
-  return { notes, root: notes[0]! };
+  return { kind: 'interval', notes, root: notes[0]!, ...(direction === 'down' ? { descending: true } : {}) };
 }
 
 /* ---------- Card builders ---------- */

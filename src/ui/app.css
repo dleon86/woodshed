@@ -281,7 +281,52 @@ select {
 }
 
 .setting .segmented {
-  min-width: 240px;
+  /* Beside the heading when there is room; the full row when it wraps. */
+  flex: 1 1 240px;
+  max-width: 420px;
+}
+
+.range {
+  flex: 1 1 200px;
+  min-width: 0;
+  min-height: 44px;
+  accent-color: var(--accent);
+}
+
+.select.number {
+  width: 6.5em;
+  font: inherit;
+  color: inherit;
+  text-align: center;
+}
+
+.mic-check .mic-readout {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  min-height: 3.2rem;
+}
+
+.mic-check .mic-readout p {
+  margin: 0;
+}
+
+.mic-note {
+  font-family: var(--font-music);
+  font-size: 2.4rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.mic-cents {
+  font-weight: 700;
+  color: var(--good);
+}
+
+.mic-cents[data-off='true'] {
+  color: var(--bad);
 }
 
 .select {
@@ -516,6 +561,8 @@ button.link {
 }
 
 .segmented.compact button {
+  /* Short fixed labels: size to the text instead of sharing the row. */
+  flex: 0 0 auto;
   min-width: 44px;
   padding: 0 10px;
   font-family: var(--font-music);
@@ -523,6 +570,23 @@ button.link {
 
 .chip.compact {
   padding: 6px 12px;
+}
+
+.chip:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.view-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip.play {
+  min-width: 84px;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .view-main,

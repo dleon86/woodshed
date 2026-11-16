@@ -80,7 +80,7 @@ export function Explore() {
         </dl>
       </article>
 
-      <InstrumentView show={{ notes: s.degrees.map((d) => d.note), root: s.tonic, key: s.key }} />
+      <InstrumentView show={{ kind: 'scale', notes: s.degrees.map((d) => d.note), root: s.tonic, key: s.key }} />
     </section>
   );
 }

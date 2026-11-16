@@ -1,6 +1,8 @@
 import { profile } from '../../state/session';
 import { THEME_PREFS, themePref } from '../../state/theme';
 import { activeFret, leftHanded, setFret } from '../../state/views';
+import { MicCheck } from '../settings/MicCheck';
+import { SoundSettings } from '../settings/SoundSettings';
 
 const THEME_LABEL = { auto: 'Auto', light: 'Light', dark: 'Dark' } as const;
 
@@ -61,6 +63,9 @@ export function Settings() {
           </div>
         </>
       )}
+
+      <SoundSettings />
+      <MicCheck />
 
       <div class="setting">
         <div>

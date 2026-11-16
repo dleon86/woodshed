@@ -8,6 +8,8 @@ const port = 4173;
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: true,
+  // Locally, WebKit starves when every core runs a browser; CI machines are small enough already.
+  ...(process.env.CI ? {} : { workers: 4 }),
   // WebKit on Windows is slow when every worker is busy; the longest test flips 16 cards.
   timeout: 60_000,
   forbidOnly: !!process.env.CI,
@@ -26,7 +28,15 @@ export default defineConfig({
   },
   projects: [
     // The two target devices (PRD section 3): Android phone on Chrome, iPad on Safari (WebKit).
-    { name: 'phone', use: { ...devices['Pixel 7'] } },
+    {
+      name: 'phone',
+      use: {
+        ...devices['Pixel 7'],
+        // A fake microphone, granted without a prompt, for the mic check test.
+        permissions: ['microphone'],
+        launchOptions: { args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] },
+      },
+    },
     { name: 'ipad-portrait', use: { ...devices['iPad Pro 11'] } },
     { name: 'ipad-landscape', use: { ...devices['iPad Pro 11 landscape'] } },
   ],

@@ -38,7 +38,7 @@ export function Keyboard({ marks, center }: { marks: readonly KeyMark[]; center:
       <svg
         class="keyboard"
         viewBox={`0 0 ${width} ${WHITE_H + 2}`}
-        style={{ minWidth: `${whites.length * 26}px` }}
+        style={{ minWidth: `${whites.length * 23}px` }}
         role="img"
         aria-label={marks.length ? `Keyboard: ${marks.map((m) => m.label).join(' ')}` : 'Keyboard'}
       >

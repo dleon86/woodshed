@@ -162,3 +162,102 @@ test('layout holds with wider text (other system fonts, large text settings)', a
   await page.getByRole('button', { name: 'Pin staff' }).click();
   await expectNoOverflow(page);
 });
+
+/* ---------- Sound (M4) ---------- */
+
+/** Record the frequency of every oscillator the page starts, so tests can check what would sound. */
+async function recordOscillators(page: Page): Promise<() => Promise<number[]>> {
+  await page.addInitScript(() => {
+    const started: number[] = [];
+    (window as unknown as { __started: number[] }).__started = started;
+    if (typeof OscillatorNode === 'undefined') return;
+    const start = OscillatorNode.prototype.start;
+    OscillatorNode.prototype.start = function (when?: number) {
+      // Each note is several partials; only the lowest one of a group is the pitch that is heard.
+      started.push(this.frequency.value);
+      return start.call(this, when);
+    };
+  });
+  return () => page.evaluate(() => (window as unknown as { __started: number[] }).__started);
+}
+
+/** Playwright's WebKit for Windows is built without Web Audio; real Safari has it. */
+async function skipWithoutAudio(page: Page): Promise<void> {
+  const hasAudio = await page.evaluate(() => typeof AudioContext !== 'undefined');
+  test.skip(!hasAudio, 'this browser build has no Web Audio');
+}
+
+/** The notes heard: the first oscillator of every group of four partials a voice starts. */
+const fundamentals = (started: number[], partialsPerNote = 4) => started.filter((_, i) => i % partialsPerNote === 0);
+
+const near = (list: number[], hz: number) => list.some((f) => Math.abs(f - hz) < 0.5);
+
+test('Play sounds the answer at the right pitches, and Stop ends it', async ({ page }) => {
+  const errors = watchErrors(page);
+  const started = await recordOscillators(page);
+  await open(page, '#/explore'); // C major on the keyboard: C4 to C5
+  await skipWithoutAudio(page);
+
+  await page.getByRole('button', { name: '▶ Play' }).click();
+  await expect(page.getByRole('button', { name: '■ Stop' })).toBeVisible();
+  const keyboard = fundamentals(await started());
+  expect(keyboard).toHaveLength(8);
+  for (const hz of [261.63, 293.66, 329.63, 349.23, 392.0, 440.0, 493.88, 523.25]) {
+    expect(near(keyboard, hz), `keyboard plays ${hz} Hz`).toBe(true);
+  }
+  await page.getByRole('button', { name: '■ Stop' }).click();
+  await expect(page.getByRole('button', { name: '▶ Play' })).toBeVisible();
+
+  // A-2: guitar sounds an octave lower than the keyboard placement (C3 to C4).
+  await page.getByLabel('Instrument').selectOption('guitar');
+  const before = (await started()).length;
+  await page.getByRole('button', { name: '▶ Play' }).click();
+  await expect(page.getByRole('button', { name: '■ Stop' })).toBeVisible();
+  const guitar = fundamentals((await started()).slice(before));
+  expect(near(guitar, 130.81), 'guitar starts on C3').toBe(true);
+  expect(near(guitar, 523.25), 'guitar does not reach C5').toBe(false);
+  expect(errors).toEqual([]);
+});
+
+test('the drone holds the root, and the reference pitch retunes playback', async ({ page }) => {
+  const started = await recordOscillators(page);
+  await open(page, '#/settings');
+  await skipWithoutAudio(page);
+  await page.getByLabel('Reference pitch').fill('442');
+  await page.getByLabel('Reference pitch').blur();
+  await page.getByRole('link', { name: 'Explore' }).click();
+  await page.getByRole('radio', { name: /^A\s*3♯/ }).click(); // A major: its A4 is the reference pitch
+
+  await page.getByRole('button', { name: 'Drone' }).click();
+  await expect.poll(async () => near(await started(), 110.5), { message: 'drone on A2 at A=442' }).toBe(true);
+
+  await page.getByRole('button', { name: '▶ Play' }).click();
+  await expect.poll(async () => near(await started(), 442), { message: 'A4 plays at 442 Hz' }).toBe(true);
+  expect(near(await started(), 440)).toBe(false);
+});
+
+test('Play is off until a card is flipped, and sound settings fit the screen', async ({ page }) => {
+  await open(page);
+  await startDefaultDeck(page);
+  await expect(page.getByRole('button', { name: '▶ Play' })).toBeDisabled();
+  await flip(page);
+  const hasAudio = await page.evaluate(() => typeof AudioContext !== 'undefined');
+  if (hasAudio) await expect(page.getByRole('button', { name: '▶ Play' })).toBeEnabled();
+  await expectNoOverflow(page);
+  await page.getByRole('link', { name: 'Settings' }).click();
+  await expect(page.getByLabel('Tempo')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Mic check' })).toBeVisible();
+  await expectNoOverflow(page);
+});
+
+test('the mic check shows a note heard through the microphone', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'only Chromium has a fake microphone to test with');
+  await open(page, '#/settings');
+  await page.getByRole('button', { name: 'Start' }).click();
+  await expect(page.locator('.mic-readout')).toContainText('Listening');
+  // Chromium's fake microphone beeps only now and then, so allow time for one to be caught.
+  await expect(page.locator('.mic-note')).toBeVisible({ timeout: 45_000 });
+  await expect(page.locator('.mic-readout')).toContainText('Hz');
+  await page.getByRole('button', { name: 'Stop' }).click();
+  await expect(page.locator('.mic-readout')).toContainText('Tap Start');
+});

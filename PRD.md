@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft 8 (paper deck preset removed) |
+| **Status** | Draft 9 (M4 decisions recorded) |
 | **Date** | 2026-11-15 |
 | **Owner** | Danny |
 
@@ -242,7 +242,7 @@ Confirmed at M0 unless marked otherwise.
 - **Pitch detection:** the browser's microphone API with an autocorrelation-family algorithm (YIN or McLeod), with the browser's echo cancellation, noise suppression and automatic gain turned off because they distort instrument sound. The analysis window must be long enough for bass low E.
 - **Hosting:** needs HTTPS, because browsers only allow microphone access on secure sites. The repository is **public** and the app is hosted on GitHub Pages.
 - **Existing libraries:** evaluate established open-source libraries for theory, notation and pitch detection before writing each from scratch.
-- **Theory engine (M1):** written in-house rather than using Tonal.js. Spelling reduces to letter + accidental arithmetic (about 650 lines), the engine stays dependency-free inside its architecture boundary, and every spelling rule is ours to test. Pitch detection is still to be evaluated at M7.
+- **Theory engine (M1):** written in-house rather than using Tonal.js. Spelling reduces to letter + accidental arithmetic (about 650 lines), the engine stays dependency-free inside its architecture boundary, and every spelling rule is ours to test. - **Pitch detection (M4):** the YIN method, written in-house (about 80 lines of pure math in `src/audio/pitch.ts`) rather than a library. It is unit-tested on synthetic string-like waves for every note from bass low E to the top of the guitar (within 5 cents), 5-string low B, weak fundamentals, silence and noise. The analysis buffer is 4096 samples (85 ms at 48 kHz). Tuning it against the real instruments is M7 work.
 - **Notation (M3):** our own SVG staff rather than VexFlow (22 MB unpacked, about 1 MB bundled) or abcjs. We need one staff with clef, key signature, whole notes, accidentals and ledger lines, plus tap entry in M5, which is easier on SVG we control. Glyphs come from a 14-glyph subset of **Bravura** (SIL OFL 1.1, 19 KB WOFF), renamed "Woodshed Music" as the OFL's Reserved Font Name clause requires, with its license shipped alongside.
 - **Layers:** `src/theory` (engine), `src/cards` (card content, sessions) and `src/instruments` (profiles, octave placement, fret positions) are all pure TypeScript with no DOM, each held to its imports by `tests/architecture.test.ts`.
 
@@ -346,6 +346,14 @@ Each milestone ends with something usable on the phone.
 | Mic check moved earlier | A rough tuner readout is part of M4 (see section 9) |
 | M5 split | M5a (picker, keyboard, multiple choice, progress) and M5b (fretboard and staff entry) |
 | Progress data shape | Answer log plus per-card state with spaced-repetition fields from the start (G-1) |
+| Playing an answer (A-1) | A Play button above every view plays what is drawn: scales one note per beat (up, down or both, set in Settings), intervals as a melody, together, or the melody then together (the default). Playback stops when the card changes. Chords (block, arpeggio) arrive with the chord tool in M6 |
+| Tempo (A-3) | 40 to 240 notes per minute, default 120 |
+| Synth (A-4) | Each note is four sine/triangle partials with a fast attack and a decay that is longer for low notes. The upper partials keep bass notes audible on phone speakers |
+| Drone (A-5) | A toggle above every view. It holds the root of the answer on screen, one octave below where the root is drawn, and follows the card |
+| Reference pitch (A-6) | 415 to 466 Hz in Settings, default 440; applies to playback, the drone and the mic check |
+| No audio support | Play and Drone are disabled, not silent, in a browser without Web Audio |
+| Mic check (M4) | A test block in Settings: start, permission states (P-9), then note, cents and Hz. Playback and the drone stop while it listens (P-8); leaving Settings releases the mic. The real tuner is M7 |
+| Audio testing limits | Browser tests check the scheduled pitches and the mic path on Chromium. Playwright's WebKit build for Windows has no Web Audio, so Safari audio is verified only on the real iPad |
 | View switcher (V-4) | Removed after trying M3 on the iPad: the instrument already implies the view, and a separate switcher allowed combinations that made no sense (a keyboard on frets). The staff is reached with Pin staff. Seeing guitar answers on a piano could return as a setting if missed |
 | Grand staff split | Written middle C and above on the treble staff, below on the bass staff |
 

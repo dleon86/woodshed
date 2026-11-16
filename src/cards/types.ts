@@ -56,6 +56,10 @@ export interface Card {
  * without octaves; the views place them for the active profile.
  */
 export interface Show {
+  /** What the notes are, which decides how they are played (A-1). */
+  readonly kind: 'scale' | 'interval';
+  /** For an interval asked downward: the melody starts on the upper note. */
+  readonly descending?: boolean;
   /** Lowest first; each is placed above the one before. */
   readonly notes: readonly Note[];
   /** Labels (degrees, intervals) are measured from this note. */
