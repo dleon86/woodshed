@@ -26,15 +26,19 @@ export type View = (typeof VIEWS)[number];
 export const INSTRUMENTS = INSTRUMENT_IDS;
 export type Instrument = InstrumentId;
 
-/** I-1: the last chosen instrument and view are remembered. */
+/** I-1: the last chosen instrument is remembered. */
 export const instrument = signal<Instrument>(load('instrument', INSTRUMENTS, 'keyboard'));
-export const view = signal<View>(load('view', VIEWS, PROFILES[instrument.value].defaultView));
 export const profile = computed<Profile>(() => PROFILES[instrument.value]);
+
+/**
+ * The instrument decides the view (V-4): keyboard → keys, guitar and bass →
+ * fretboard. The staff is added below with Pin staff (V-6).
+ */
+export const view = computed<View>(() => profile.value.defaultView);
 
 export function selectInstrument(next: Instrument): void {
   instrument.value = next;
-  view.value = PROFILES[next].defaultView;
 }
 
 effect(() => save('instrument', instrument.value));
-effect(() => save('view', view.value));
+save('view', null); // the view used to be chosen separately; drop the stale value

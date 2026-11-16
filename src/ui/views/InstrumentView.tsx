@@ -26,8 +26,9 @@ const LABEL_NAME: Record<LabelStyle, string> = {
 };
 
 /**
- * The active instrument view (V-1 to V-6). `show` is the answer to draw;
- * without it the instrument is drawn empty (before a card is flipped).
+ * The instrument's view (V-1 to V-6): keyboard or fretboard, plus the staff
+ * when pinned. `show` is the answer to draw; without it the instrument is
+ * drawn empty (before a card is flipped).
  */
 export function InstrumentView({ show }: { show?: Show | undefined }) {
   const active = view.value;
@@ -50,11 +51,11 @@ export function InstrumentView({ show }: { show?: Show | undefined }) {
   let main;
   if (active === 'keyboard') {
     main = <Keyboard marks={placed.map((pitch, i) => ({ midi: midi(pitch), ...describe(i) }))} center={p.center} />;
-  } else if (active === 'fretboard') {
+  } else {
     const tuning = activeTuning.value;
     const frets = activeFret.value?.frets;
     main =
-      tuning && frets !== undefined ? (
+      active === 'fretboard' && tuning && frets !== undefined ? (
         <Fretboard
           strings={tuning.strings.length}
           frets={frets}
@@ -72,10 +73,8 @@ export function InstrumentView({ show }: { show?: Show | undefined }) {
           }
         />
       ) : (
-        <p class="muted small view-note">{p.label} has no fretboard. Pick guitar or bass in the bar above.</p>
+        staff // a staff-first profile (brass, later) shows the staff as its main view
       );
-  } else {
-    main = staff;
   }
 
   return (

@@ -12,7 +12,7 @@ Music theory practice PWA (Android phone + iPad). [PRD.md](PRD.md) is the spec a
 
 - `src/theory/`: **the theory engine. Pure TypeScript, no UI.** No imports from outside `src/theory/`. No DOM, Preact, audio, storage or `window`. Its tsconfig (`tsconfig.theory.json`) has no DOM lib, and `tests/architecture.test.ts` fails on any outside import. Views, audio and mic code import from the engine, never the reverse.
 - `src/cards/` (card content, sessions) and `src/instruments/` (profiles, octave placement, fret positions): also pure TypeScript with no DOM. They may import only themselves and `src/theory/`; the architecture test enforces it.
-- `src/state/`: app state as `@preact/signals`. UI preferences that must apply before first paint (theme, instrument, view) live in `localStorage` via `state/storage.ts`. Progress data goes in IndexedDB (later milestone).
+- `src/state/`: app state as `@preact/signals`. UI preferences that must apply before first paint (theme, instrument) live in `localStorage` via `state/storage.ts`. Progress data goes in IndexedDB (later milestone).
 - `src/ui/`: Preact components (`.tsx`) and `app.css`. Instrument views are SVG (PRD section 8). The staff draws SMuFL glyphs from `src/ui/fonts/woodshed-music.woff`, a renamed Bravura subset (OFL: never call it Bravura). To add glyphs, re-subset from the original Bravura with fontTools and keep the rename.
 - Views draw *sounding* pitch on keyboard and fretboard and *written* pitch on the staff (`writtenPitch`).
 - Routing is hash-based (`#/practice`, `#/explore`, `#/progress`, `#/settings`) so GitHub Pages needs no server rewrites.

@@ -154,7 +154,7 @@ select {
   grid-area: top;
   display: grid;
   grid-template-columns: 1fr auto;
-  grid-template-areas: 'brand instrument' 'views views';
+  grid-template-areas: 'brand instrument';
   gap: 8px 12px;
   align-items: center;
   padding: calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + var(--gutter)) 10px
@@ -188,9 +188,6 @@ select {
   font-weight: 600;
 }
 
-.view-switch {
-  grid-area: views;
-}
 
 .segmented {
   display: flex;
@@ -530,10 +527,6 @@ button.link {
   border-radius: var(--radius);
 }
 
-.view-note {
-  margin: 12px;
-  text-align: center;
-}
 
 .hscroll {
   overflow-x: auto;
@@ -940,15 +933,12 @@ button.secondary {
   }
 
   .topbar {
-    grid-template-columns: auto auto 1fr;
-    grid-template-areas: 'brand instrument views';
+    grid-template-columns: auto 1fr;
+    grid-template-areas: 'brand instrument';
+    justify-items: start;
     padding-left: var(--gutter);
   }
 
-  .view-switch {
-    justify-self: end;
-    min-width: 320px;
-  }
 
   .nav {
     flex-direction: column;

@@ -146,9 +146,9 @@ Three interchangeable views, used both to display answers and to enter them.
 - **V-1 Keyboard:** scrollable piano, at least two octaves visible on a phone, more on a tablet. Keys light up and can be labelled with note names or scale degrees.
 - **V-2 Fretboard:** strings and frets per the profile's tuning, showing the **whole neck** (fret count set per profile). On a phone the neck is shown in landscape, or scrolls sideways in portrait. Shows every position of a note, or one chosen position or voicing. Left-handed flip option.
 - **V-3 Staff:** clef per profile, real key signatures, ledger lines, accidentals. Tap a line or space to enter a note, then set its accidental.
-- **V-4** A view switcher is always visible. The same card re-renders in place when the view changes.
+- **V-4** The instrument profile decides the view: keyboard shows the keyboard, guitar and bass show the fretboard. There is no separate view switcher. The same card re-renders in place when the instrument changes.
 - **V-5** Label options: note names, scale degrees, intervals from the root, or none (for self-testing).
-- **V-6 Pinned staff:** the staff can be pinned so it stays visible together with the keyboard or the fretboard. Both show the same notes and update together, and notes can be entered on either.
+- **V-6 Pinned staff:** the staff can be pinned so it stays visible together with the keyboard or the fretboard (a toggle above the view). Both show the same notes and update together, and notes can be entered on either.
 
 ### 6.4 Audio
 
@@ -214,7 +214,7 @@ Four top-level sections:
 3. **Progress** — heat map, streak, weak spots.
 4. **Settings**
 
-The instrument profile selector and the view switcher sit in a persistent bar so they are one tap away during practice.
+The instrument profile selector sits in a persistent bar so it is one tap away during practice; it also sets the view (V-4).
 
 ## 8. Technical approach
 
@@ -222,7 +222,7 @@ Confirmed at M0 unless marked otherwise.
 
 - **App type:** installable web app (PWA) built as a static site. No server in v1.
 - **Offline:** all code, sounds and content cached on first load; fully usable without a network afterwards. Done with vite-plugin-pwa (Workbox service worker that precaches every built file).
-- **Storage:** progress and settings in on-device browser storage (IndexedDB), with the export/import file from G-5 as backup. Browsers can clear on-device storage, so the backup matters. Exception: the few UI preferences that must apply before the first paint (theme, last instrument, last view) are kept in `localStorage`, which can be read synchronously. They are included in the G-5 export.
+- **Storage:** progress and settings in on-device browser storage (IndexedDB), with the export/import file from G-5 as backup. Browsers can clear on-device storage, so the backup matters. Exception: the few UI preferences that must apply before the first paint (theme, last instrument, pinned staff, labels) are kept in `localStorage`, which can be read synchronously. They are included in the G-5 export.
 - **Structure:** a theory engine with no user-interface code, covered by automated tests, with the views, audio and mic layers built on top of it. Correct note spelling is the part most worth testing heavily.
 - **Language and tooling:** TypeScript (strict). Build tool **Vite**. UI framework **Preact** with **Preact Signals** for shared state (about 4 KB, plain TSX, so the engine and UI share one language and toolchain). Tests with **Vitest**. Hash-based routing so GitHub Pages needs no server rewrites. The theory engine is its own TypeScript project with no DOM types, and a test fails if it imports anything outside `src/theory/`.
 - **Rendering:** the keyboard, fretboard and staff drawn as SVG so they scale cleanly between phone and tablet.
@@ -324,6 +324,7 @@ Each milestone ends with something usable on the phone.
 | Fretboard display (V-2) | Shows every position of every answer note across the whole neck; highest string on top; equal fret spacing for readability. One chosen position or voicing comes with the chord tool (C-2) |
 | Keyboard display (V-1) | Whole octaves around the answer, at least two, scrolling sideways when wider than the screen |
 | Labels (V-5) | Note names, scale degrees (relative to major), intervals from the root (R, m3, P5), or off; a quick toggle above every view |
+| View switcher (V-4) | Removed after trying M3 on the iPad: the instrument already implies the view, and a separate switcher allowed combinations that made no sense (a keyboard on frets). The staff is reached with Pin staff. Seeing guitar answers on a piano could return as a setting if missed |
 | Grand staff split | Written middle C and above on the treble staff, below on the bass staff |
 
 ### Open

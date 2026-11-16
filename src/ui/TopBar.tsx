@@ -1,10 +1,8 @@
 import { PROFILES } from '../instruments';
-import { INSTRUMENTS, VIEWS, instrument, selectInstrument, view } from '../state/session';
+import { INSTRUMENTS, instrument, selectInstrument } from '../state/session';
 import type { Instrument } from '../state/session';
 
-const VIEW_LABEL = { keyboard: 'Keys', fretboard: 'Frets', staff: 'Staff' } as const;
-
-/** Persistent bar: instrument profile and view switcher, one tap away (PRD section 7, I-1, V-4). */
+/** Persistent bar: the instrument profile, one tap away. It also picks the view (PRD section 7, I-1, V-4). */
 export function TopBar() {
   return (
     <header class="topbar">
@@ -22,19 +20,6 @@ export function TopBar() {
           ))}
         </select>
       </label>
-      <div class="segmented view-switch" role="radiogroup" aria-label="View">
-        {VIEWS.map((id) => (
-          <button
-            key={id}
-            type="button"
-            role="radio"
-            aria-checked={view.value === id}
-            onClick={() => (view.value = id)}
-          >
-            {VIEW_LABEL[id]}
-          </button>
-        ))}
-      </div>
     </header>
   );
 }

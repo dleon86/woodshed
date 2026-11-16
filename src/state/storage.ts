@@ -1,6 +1,6 @@
 /**
  * Small, safe wrapper around localStorage for UI preferences that must be
- * read synchronously at startup (theme, last instrument, last view).
+ * read synchronously at startup (theme, last instrument).
  * Progress data goes to IndexedDB in a later milestone (PRD section 8).
  */
 const PREFIX = 'woodshed.';
