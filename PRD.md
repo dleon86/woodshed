@@ -301,7 +301,7 @@ Each milestone ends with something usable on the phone.
 | UI framework and tooling | Preact + Signals, Vite, Vitest, vite-plugin-pwa (see section 8) |
 | Hosting path | GitHub Pages at `/woodshed/` (repository `woodshed`) |
 | Theory library | In-house engine, no dependency (see section 8) |
-| Roman numeral interval cards | A bare numeral on a note means the degree of the major scale built on it: "E♭ V" = B♭, "C VI" = A |
+| Roman numerals and degrees | Follow standard usage. A numeral on a bare note treats the note as a major tonic: "E♭ V" = B♭, "C VI" = A. When a card names a key, the degree comes from that key's scale: "VI of C minor" = A♭. Cards are written so the key is clear whenever it matters |
 | Melodic minor | Classical form: raised 6 and 7 ascending, natural minor descending. The engine keeps both forms |
 | Scale degree labels | Relative to the major scale (1 2 ♭3 4 5 ♭6 7), also used for chord formulas |
 | M1 on the phone | Explore gets a text scale browser (type, key, notes with degrees, signature, related keys) |
