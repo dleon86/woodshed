@@ -1,7 +1,7 @@
 import { useEffect } from 'preact/hooks';
 import type { Session } from '../../cards';
 import { endSession, flipped, grade } from '../../state/practice';
-import { INSTRUMENT_INFO, instrument, view } from '../../state/session';
+import { InstrumentView } from '../views/InstrumentView';
 import { FlashCard } from './FlashCard';
 
 /** The drill: one card at a time, flip, grade (F-1 to F-3). */
@@ -72,10 +72,7 @@ export function Drill({ session }: { session: Session }) {
         <p class="muted small drill-hint">{isFlipped ? 'Swipe right if you got it, left if you missed it' : 'Tap the card to flip it'}</p>
       </div>
       <div class="pane view-pane" aria-label="Instrument view">
-        <div class="view-placeholder">
-          <strong>{view.value[0]!.toUpperCase() + view.value.slice(1)} view</strong>
-          <span>{INSTRUMENT_INFO[instrument.value].label} · drawn in M3</span>
-        </div>
+        <InstrumentView show={isFlipped ? card.show : undefined} />
       </div>
     </section>
   );

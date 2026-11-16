@@ -2,7 +2,7 @@
  * Flash card model (PRD 6.1). Cards are plain data built from the theory
  * engine; the UI only renders them. Pure TypeScript, no DOM.
  */
-import type { Direction, ScaleType } from '../theory';
+import type { Direction, Key, Note, ScaleType } from '../theory';
 
 /** The M2 card families (F-5). Chord families arrive with the chord tool in M6. */
 export const FAMILIES = [
@@ -47,6 +47,23 @@ export interface Card {
   readonly details: readonly string[];
   /** A row of notes with labels (scale with degrees). */
   readonly notes?: readonly LabelledNote[];
+  /** What the instrument views draw for the answer (F-6). */
+  readonly show: Show;
+}
+
+/**
+ * The answer as notes for the keyboard, fretboard and staff. Spelled notes
+ * without octaves; the views place them for the active profile.
+ */
+export interface Show {
+  /** Lowest first; each is placed above the one before. */
+  readonly notes: readonly Note[];
+  /** Labels (degrees, intervals) are measured from this note. */
+  readonly root: Note;
+  /** Draw this key signature on the staff. Without one, every accidental is written. */
+  readonly key?: Key;
+  /** The note the card asks for, when it is one note of a larger picture (scale degree cards). */
+  readonly focus?: Note;
 }
 
 export type KeyFilter = 'all' | 'flats' | 'sharps' | 'custom';

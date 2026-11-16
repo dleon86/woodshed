@@ -5,7 +5,7 @@
  * accidental that gives the right semitone count. That two-step rule is what
  * makes a perfect 5th above B come out as F♯ and never G♭.
  */
-import { type Note, letterAt, letterIndex, mod, naturalSemitones, note, pitchClass } from './note';
+import { type Note, type Pitch, letterAt, letterIndex, midi, mod, naturalSemitones, note, pitchClass } from './note';
 
 export type Quality = 'dd' | 'd' | 'm' | 'M' | 'P' | 'A' | 'AA';
 
@@ -109,6 +109,19 @@ export function transpose(from: Note, iv: Interval, direction: Direction = 'up')
   const letter = letterAt(from.letter, sign * (iv.number - 1));
   const pc = pitchClass(from) + sign * semitones(iv);
   return note(letter, alterFor(naturalSemitones(letter), pc));
+}
+
+/**
+ * A pitch an interval above or below, with the octave carried by the letter:
+ * a minor 2nd above B3 is C4, a perfect octave below E4 is E3.
+ */
+export function transposePitch(from: Pitch, iv: Interval, direction: Direction = 'up'): Pitch {
+  const sign = direction === 'up' ? 1 : -1;
+  const steps = from.octave * 7 + letterIndex(from) + sign * (iv.number - 1);
+  const octave = Math.floor(steps / 7);
+  const letter = letterAt('C', steps - octave * 7);
+  const target = midi(from) + sign * semitones(iv);
+  return { letter, alter: target - (12 * (octave + 1) + naturalSemitones(letter)), octave };
 }
 
 /**

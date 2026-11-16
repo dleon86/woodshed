@@ -1,3 +1,15 @@
+/* ---------- Fonts ---------- */
+
+/*
+ * Woodshed Music: a 14-glyph subset of Bravura (SIL OFL 1.1, see fonts/OFL.txt),
+ * renamed as the OFL requires. Clefs, noteheads and accidentals for the staff.
+ */
+@font-face {
+  font-family: 'Woodshed Music';
+  src: url('./fonts/woodshed-music.woff') format('woff');
+  font-display: block;
+}
+
 /* ---------- Tokens ---------- */
 
 :root {
@@ -270,6 +282,15 @@ select {
   min-width: 240px;
 }
 
+.select {
+  min-height: 44px;
+  max-width: 100%;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
 /* Practice: card above view on phones, side by side on tablets */
 .split {
   display: grid;
@@ -341,24 +362,6 @@ select {
 .card-notes {
   width: 100%;
   margin: 4px 0;
-}
-
-.view-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  min-height: 160px;
-  height: 100%;
-  border: 2px dashed var(--border);
-  border-radius: var(--radius);
-  color: var(--muted);
-  text-align: center;
-}
-
-.view-placeholder strong {
-  color: var(--text);
 }
 
 /* Explore: scale browser */
@@ -487,6 +490,193 @@ button.link {
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
+}
+
+/* ---------- Instrument views (PRD 6.3) ---------- */
+
+.instrument-view {
+  display: grid;
+  /* minmax(0, …): a wide fretboard scrolls inside its box instead of widening the column. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  min-width: 0;
+}
+
+.view-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.segmented.compact button {
+  min-width: 44px;
+  padding: 0 10px;
+  font-family: var(--font-music);
+}
+
+.chip.compact {
+  padding: 6px 12px;
+}
+
+.view-main,
+.view-pinned {
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.view-note {
+  margin: 12px;
+  text-align: center;
+}
+
+.hscroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.hscroll > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The staff keeps its natural size and only shrinks to fit. */
+svg.staff {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+svg text {
+  text-anchor: middle;
+  dominant-baseline: central;
+  font-family: var(--font);
+  user-select: none;
+}
+
+/* Marks shared by keyboard and fretboard */
+.mark {
+  fill: var(--surface);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.mark.root,
+.mark.focus {
+  fill: var(--accent);
+}
+
+.mark.focus {
+  stroke: var(--text);
+  stroke-width: 2.5;
+}
+
+.mark-label {
+  fill: var(--text);
+  font-family: var(--font-music);
+  font-weight: 700;
+}
+
+.mark.root + .mark-label,
+.mark.focus + .mark-label {
+  fill: var(--accent-text);
+}
+
+/* Keyboard */
+.key.white {
+  fill: #fffdf8;
+  stroke: #8d8174;
+  stroke-width: 1;
+}
+
+.key.black {
+  fill: #2a211b;
+  stroke: #2a211b;
+}
+
+.key.white.note {
+  fill: #f3dcc4;
+}
+
+.key.white.root,
+.key.white.focus {
+  fill: #e8bf97;
+}
+
+.key.black.note,
+.key.black.root,
+.key.black.focus {
+  fill: #6b4226;
+}
+
+.key-c {
+  fill: #8d8174;
+  font-size: 8px;
+}
+
+/* Fretboard */
+.board {
+  fill: var(--surface-2);
+}
+
+.fret {
+  stroke: var(--muted);
+  stroke-width: 1.5;
+}
+
+.nut {
+  stroke: var(--text);
+  stroke-width: 5;
+}
+
+.string {
+  stroke: var(--muted);
+}
+
+.inlay {
+  fill: var(--border);
+}
+
+.string-name,
+.fret-number {
+  fill: var(--muted);
+  font-size: 10px;
+  font-family: var(--font-music);
+}
+
+/* Staff */
+.staff-line,
+.ledger {
+  stroke: var(--text);
+  stroke-width: 1;
+}
+
+.ledger {
+  stroke-width: 1.4;
+}
+
+.glyph {
+  fill: var(--text);
+  font-family: 'Woodshed Music';
+  text-anchor: start;
+  dominant-baseline: alphabetic;
+}
+
+.staff-note.root .glyph,
+.staff-note.focus .glyph {
+  fill: var(--accent);
+}
+
+.staff-label {
+  fill: var(--muted);
+  font-size: 9px;
+  font-family: var(--font-music);
 }
 
 /* ---------- Buttons ---------- */

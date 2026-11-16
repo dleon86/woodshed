@@ -31,7 +31,7 @@ export default defineConfig({
       },
       workbox: {
         // Precache everything the build emits so the app runs fully offline (PRD section 8).
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,woff2,wav,mp3,json}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,woff,woff2,wav,mp3,json}'],
         navigateFallback: `${base}index.html`,
         cleanupOutdatedCaches: true,
       },

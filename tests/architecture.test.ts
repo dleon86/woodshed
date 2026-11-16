@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const theoryDir = join(root, 'src', 'theory');
 const cardsDir = join(root, 'src', 'cards');
+const instrumentsDir = join(root, 'src', 'instruments');
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -41,5 +42,9 @@ describe('layer boundaries', () => {
 
   it('cards import only from src/cards and the theory engine', () => {
     expect(violations(cardsDir, [cardsDir, theoryDir])).toEqual([]);
+  });
+
+  it('instruments import only from src/instruments and the theory engine', () => {
+    expect(violations(instrumentsDir, [instrumentsDir, theoryDir])).toEqual([]);
   });
 });

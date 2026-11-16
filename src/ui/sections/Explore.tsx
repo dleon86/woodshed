@@ -1,4 +1,5 @@
 import { exploreTonic, exploreType, openScale } from '../../state/explore';
+import { InstrumentView } from '../views/InstrumentView';
 import {
   type Key,
   SCALE_TYPES,
@@ -78,6 +79,8 @@ export function Explore() {
           <Related label="Enharmonic" k={enharmonicKey(s.key)} type={type} />
         </dl>
       </article>
+
+      <InstrumentView show={{ notes: s.degrees.map((d) => d.note), root: s.tonic, key: s.key }} />
     </section>
   );
 }

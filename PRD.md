@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft 5 (M2 decisions recorded) |
+| **Status** | Draft 6 (M3 decisions recorded) |
 | **Date** | 2026-11-15 |
 | **Owner** | Danny |
 
@@ -230,7 +230,9 @@ Confirmed at M0 unless marked otherwise.
 - **Pitch detection:** the browser's microphone API with an autocorrelation-family algorithm (YIN or McLeod), with the browser's echo cancellation, noise suppression and automatic gain turned off because they distort instrument sound. The analysis window must be long enough for bass low E.
 - **Hosting:** needs HTTPS, because browsers only allow microphone access on secure sites. The repository is **public** and the app is hosted on GitHub Pages.
 - **Existing libraries:** evaluate established open-source libraries for theory, notation and pitch detection before writing each from scratch.
-- **Theory engine (M1):** written in-house rather than using Tonal.js. Spelling reduces to letter + accidental arithmetic (about 650 lines), the engine stays dependency-free inside its architecture boundary, and every spelling rule is ours to test. Notation and pitch detection are still to be evaluated at M3 and M7.
+- **Theory engine (M1):** written in-house rather than using Tonal.js. Spelling reduces to letter + accidental arithmetic (about 650 lines), the engine stays dependency-free inside its architecture boundary, and every spelling rule is ours to test. Pitch detection is still to be evaluated at M7.
+- **Notation (M3):** our own SVG staff rather than VexFlow (22 MB unpacked, about 1 MB bundled) or abcjs. We need one staff with clef, key signature, whole notes, accidentals and ledger lines, plus tap entry in M5, which is easier on SVG we control. Glyphs come from a 14-glyph subset of **Bravura** (SIL OFL 1.1, 19 KB WOFF), renamed "Woodshed Music" as the OFL's Reserved Font Name clause requires, with its license shipped alongside.
+- **Layers:** `src/theory` (engine), `src/cards` (card content, sessions) and `src/instruments` (profiles, octave placement, fret positions) are all pure TypeScript with no DOM, each held to its imports by `tests/architecture.test.ts`.
 
 ## 9. Milestones
 
@@ -314,11 +316,19 @@ Each milestone ends with something usable on the phone.
 | Theoretical keys | Never used as cards: a parallel key with no standard signature (G♭ minor) is skipped |
 | Session length | 10, 20, 50 or all cards per session (the timer from Q-6 comes with quizzes in M5) |
 | Deck settings storage | The last deck filter is kept in `localStorage`, read field by field so a stale value falls back to defaults |
+| Fret count | Guitar 22, bass 20 by default; 20, 21, 22 or 24 in Settings, saved per instrument |
+| Tunings (I-4) | Presets per instrument. Guitar: standard, drop D, DADGAD, open G, E♭ standard, 7-string. Bass: 4-, 5- and 6-string, drop D. Free-form tuning editing waits for a real need |
+| Ranges (I-3) | Fretted ranges come from the tuning and fret count; keyboard is A0–C8. Editing ranges by hand is deferred to M8 polish |
+| Sounding vs written | Keyboard and fretboard show sounding pitch; the staff shows written pitch (guitar and bass an octave up). Profiles describe transposition as an interval, so brass needs no rework |
+| Octave placement | A card's notes are stacked upward and centred on a per-profile pitch chosen so the written notes sit mid-staff, always inside the range |
+| Fretboard display (V-2) | Shows every position of every answer note across the whole neck; highest string on top; equal fret spacing for readability. One chosen position or voicing comes with the chord tool (C-2) |
+| Keyboard display (V-1) | Whole octaves around the answer, at least two, scrolling sideways when wider than the screen |
+| Labels (V-5) | Note names, scale degrees (relative to major), intervals from the root (R, m3, P5), or off; a quick toggle above every view |
+| Grand staff split | Written middle C and above on the treble staff, below on the bass staff |
 
 ### Open
 
 1. **Existing apps:** no survey has been done yet of apps that already cover some of these features. Worth a quick look before M2 for ideas to borrow and gaps to fill.
-2. **Fret count:** default number of frets for the guitar and bass profiles (20, 22 or 24).
 
 ## Appendix: the original paper deck
 

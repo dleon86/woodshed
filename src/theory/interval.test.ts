@@ -11,8 +11,9 @@ import {
   romanNumeral,
   semitones,
   transpose,
+  transposePitch,
 } from './interval';
-import { LETTERS, letterIndex, mod, noteName, parseNote, pitchClass } from './note';
+import { LETTERS, letterIndex, midi, mod, noteName, parseNote, parsePitch, pitchClass, pitchName } from './note';
 
 /** PRD 5.3 v1: m2 to P8, with the tritone as both A4 and d5. */
 const V1_INTERVALS = 'm2 M2 m3 M3 P4 A4 d5 P5 m6 M6 m7 M7 P8'.split(' ').map(parseInterval);
@@ -85,6 +86,33 @@ describe('transpose', () => {
           expect(mod(pitchClass(target) - pitchClass(root), 12), where).toBe(mod(sign * semitones(iv), 12));
           // Single-accidental roots never need more than a double accidental.
           expect(Math.abs(target.alter), where).toBeLessThanOrEqual(2);
+        }
+      }
+    }
+  });
+});
+
+describe('transposePitch', () => {
+  const tp = (p: string, iv: string, dir: Direction = 'up') =>
+    pitchName(transposePitch(parsePitch(p), parseInterval(iv), dir));
+
+  it('carries the octave with the letter', () => {
+    expect(tp('B3', 'm2')).toBe('C4');
+    expect(tp('E4', 'P8', 'down')).toBe('E3');
+    expect(tp('C4', 'm2', 'down')).toBe('B3');
+    expect(tp('B3', 'A1')).toBe('B♯3'); // same MIDI as C4, still octave 3
+    expect(tp('Cb4', 'P8', 'down')).toBe('C♭3');
+    expect(tp('G4', 'M2', 'down')).toBe('F4');
+  });
+
+  it('matches transpose() and moves MIDI by the semitone count, for every root and interval', () => {
+    for (const root of ROOTS) {
+      for (const iv of V1_INTERVALS) {
+        for (const dir of DIRECTIONS) {
+          const from = { ...root, octave: 4 };
+          const to = transposePitch(from, iv, dir);
+          expect(noteName(to)).toBe(noteName(transpose(root, iv, dir)));
+          expect(midi(to) - midi(from)).toBe((dir === 'up' ? 1 : -1) * semitones(iv));
         }
       }
     }

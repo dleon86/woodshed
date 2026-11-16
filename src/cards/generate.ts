@@ -37,7 +37,7 @@ import {
   signatureName,
   transpose,
 } from '../theory';
-import type { Card, DeckConfig, Family, LabelledNote } from './types';
+import type { Card, DeckConfig, Family, LabelledNote, Show } from './types';
 
 /** PRD 5.3 v1: minor 2nd to perfect octave, tritone as both A4 and d5. */
 export const V1_INTERVALS = ['m2', 'M2', 'm3', 'M3', 'P4', 'A4', 'd5', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8'] as const;
@@ -79,6 +79,19 @@ function hasNumeral(iv: Interval, direction: Direction): boolean {
   return direction === 'up' && iv.number <= 7 && (iv.quality === 'P' || iv.quality === 'M') && iv.number > 1;
 }
 
+/* ---------- What the views draw (F-6) ---------- */
+
+/** A scale, degrees 1–8, with its key signature. */
+function scaleShow(s: Scale, focus?: Note): Show {
+  return { notes: s.degrees.map((d) => d.note), root: s.tonic, key: s.key, ...(focus ? { focus } : {}) };
+}
+
+/** Two notes, lower first. Labels count from the lower note, so a 5th reads as 1 and 5 either way. */
+function intervalShow(from: Note, to: Note, direction: Direction): Show {
+  const notes = direction === 'up' ? [from, to] : [to, from];
+  return { notes, root: notes[0]! };
+}
+
 /* ---------- Card builders ---------- */
 
 export function keySignatureCard(k: Key): Card {
@@ -93,6 +106,7 @@ export function keySignatureCard(k: Key): Card {
     answer: signatureCount(sig),
     details: [sig.accidentals.length ? names(sig.accidentals) : 'No sharps or flats', ...(twin ? [twin] : [])],
     notes: scaleNotes(s),
+    show: scaleShow(s),
   };
 }
 
@@ -105,6 +119,7 @@ export function reverseKeySignatureCard(fifths: number): Card {
     front: name.charAt(0).toUpperCase() + name.slice(1),
     answer: `${keyName(majorKeyFor(fifths))} / ${keyName(minorKeyFor(fifths))}`,
     details: sig.accidentals.length ? [names(sig.accidentals)] : [],
+    show: scaleShow(scale(majorKeyFor(fifths).tonic, 'major')),
   };
 }
 
@@ -122,6 +137,7 @@ export function relativeParallelCard(k: Key, relation: 'relative' | 'parallel'):
         ? `Both have ${signatureName(keySignature(k))}`
         : `${signatureCount(keySignature(k))} → ${signatureCount(keySignature(other))}`,
     ],
+    show: scaleShow(scale(other.tonic, other.mode === 'major' ? 'major' : 'natural-minor')),
   };
 }
 
@@ -136,6 +152,7 @@ export function scaleSpellingCard(tonic: Note, type: ScaleType): Card {
     answer: names(s.degrees.slice(0, 7).map((d) => d.note)),
     details,
     notes: s.degrees.map((d) => ({ note: noteName(d.note), label: d.label })),
+    show: scaleShow(s),
   };
 }
 
@@ -152,6 +169,7 @@ export function scaleDegreeCard(tonic: Note, type: ScaleType, degree: number): C
     answer: noteName(ascending),
     details: differs ? [`Descending: ${noteName(descending.note)}`] : [],
     notes: s.degrees.map((d) => ({ note: noteName(d.note), label: String(d.degree) })),
+    show: scaleShow(s, ascending),
   };
 }
 
@@ -166,6 +184,7 @@ export function intervalCard(root: Note, iv: Interval, direction: Direction, num
     front,
     answer: noteName(target),
     details: [numeral ? `${intervalName(iv)} above ${noteName(root)}` : `${noteName(root)} ${direction} to ${noteName(target)}`],
+    show: intervalShow(root, target, direction),
   };
 }
 
@@ -180,6 +199,7 @@ export function reverseIntervalCard(root: Note, iv: Interval, direction: Directi
     front,
     answer: noteName(root),
     details: [`${intervalName(iv)} ${direction === 'up' ? 'above' : 'below'} ${noteName(root)} is ${noteName(given)}`],
+    show: intervalShow(root, given, direction),
   };
 }
 
@@ -194,6 +214,7 @@ export function intervalNamingCard(root: Note, iv: Interval, direction: Directio
     front: `${noteName(root)} ${direction} to ${noteName(other)}`,
     answer: intervalName(named),
     details: [semitoneText(iv)],
+    show: intervalShow(root, other, direction),
   };
 }
 

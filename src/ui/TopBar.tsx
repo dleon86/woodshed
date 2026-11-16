@@ -1,4 +1,5 @@
-import { INSTRUMENTS, INSTRUMENT_INFO, VIEWS, instrument, selectInstrument, view } from '../state/session';
+import { PROFILES } from '../instruments';
+import { INSTRUMENTS, VIEWS, instrument, selectInstrument, view } from '../state/session';
 import type { Instrument } from '../state/session';
 
 const VIEW_LABEL = { keyboard: 'Keys', fretboard: 'Frets', staff: 'Staff' } as const;
@@ -16,7 +17,7 @@ export function TopBar() {
         >
           {INSTRUMENTS.map((id) => (
             <option value={id} key={id}>
-              {INSTRUMENT_INFO[id].label}
+              {PROFILES[id].label}
             </option>
           ))}
         </select>

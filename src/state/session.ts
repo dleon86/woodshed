@@ -1,4 +1,5 @@
-import { effect, signal } from '@preact/signals';
+import { computed, effect, signal } from '@preact/signals';
+import { INSTRUMENT_IDS, type InstrumentId, PROFILES, type Profile } from '../instruments';
 import { load, save } from './storage';
 
 /* ---------- Sections (PRD section 7) ---------- */
@@ -20,24 +21,19 @@ window.addEventListener('hashchange', () => (section.value = sectionFromHash()))
 export const VIEWS = ['keyboard', 'fretboard', 'staff'] as const;
 export type View = (typeof VIEWS)[number];
 
-/* ---------- Instrument profiles (placeholder until M3) ---------- */
+/* ---------- Instrument profiles (PRD section 4) ---------- */
 
-export const INSTRUMENTS = ['keyboard', 'guitar', 'bass'] as const;
-export type Instrument = (typeof INSTRUMENTS)[number];
-
-export const INSTRUMENT_INFO: Record<Instrument, { label: string; defaultView: View }> = {
-  keyboard: { label: 'Keyboard', defaultView: 'keyboard' },
-  guitar: { label: 'Guitar', defaultView: 'fretboard' },
-  bass: { label: 'Bass', defaultView: 'fretboard' },
-};
+export const INSTRUMENTS = INSTRUMENT_IDS;
+export type Instrument = InstrumentId;
 
 /** I-1: the last chosen instrument and view are remembered. */
 export const instrument = signal<Instrument>(load('instrument', INSTRUMENTS, 'keyboard'));
-export const view = signal<View>(load('view', VIEWS, INSTRUMENT_INFO[instrument.value].defaultView));
+export const view = signal<View>(load('view', VIEWS, PROFILES[instrument.value].defaultView));
+export const profile = computed<Profile>(() => PROFILES[instrument.value]);
 
 export function selectInstrument(next: Instrument): void {
   instrument.value = next;
-  view.value = INSTRUMENT_INFO[next].defaultView;
+  view.value = PROFILES[next].defaultView;
 }
 
 effect(() => save('instrument', instrument.value));
