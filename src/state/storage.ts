@@ -14,6 +14,16 @@ export function load<T extends string>(key: string, allowed: readonly T[], fallb
   }
 }
 
+/** Load a JSON preference. `parse` returns undefined for anything unexpected, which falls back. */
+export function loadJson<T>(key: string, parse: (value: unknown) => T | undefined, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(PREFIX + key);
+    return (raw === null ? undefined : parse(JSON.parse(raw))) ?? fallback;
+  } catch {
+    return fallback; // blocked storage or malformed JSON
+  }
+}
+
 export function save(key: string, value: string | null): void {
   try {
     if (value === null) localStorage.removeItem(PREFIX + key);

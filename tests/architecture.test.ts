@@ -5,12 +5,13 @@ import { describe, expect, it } from 'vitest';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const theoryDir = join(root, 'src', 'theory');
+const cardsDir = join(root, 'src', 'cards');
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name);
     if (statSync(path).isDirectory()) return sourceFiles(path);
-    // Engine tests sit next to the code and import vitest; only shipped code is checked.
+    // Tests sit next to the code and import vitest; only shipped code is checked.
     return /\.tsx?$/.test(name) && !/\.test\.ts$/.test(name) ? [path] : [];
   });
 }
@@ -20,16 +21,25 @@ function importsOf(source: string): string[] {
   return [...source.matchAll(pattern)].map((m) => (m[1] ?? m[2]) as string);
 }
 
-describe('theory engine boundary', () => {
-  it('imports only from inside src/theory (no UI, framework or browser code)', () => {
-    const violations: string[] = [];
-    for (const file of sourceFiles(theoryDir)) {
-      for (const spec of importsOf(readFileSync(file, 'utf8'))) {
-        const insideTheory =
-          spec.startsWith('.') && !relative(theoryDir, resolve(dirname(file), spec)).startsWith('..');
-        if (!insideTheory) violations.push(`${relative(root, file)} imports "${spec}"`);
-      }
+/** Imports from `file` that resolve outside every allowed directory (npm packages always count). */
+function violations(dir: string, allowed: string[]): string[] {
+  const found: string[] = [];
+  for (const file of sourceFiles(dir)) {
+    for (const spec of importsOf(readFileSync(file, 'utf8'))) {
+      const target = resolve(dirname(file), spec);
+      const ok = spec.startsWith('.') && allowed.some((a) => !relative(a, target).startsWith('..'));
+      if (!ok) found.push(`${relative(root, file)} imports "${spec}"`);
     }
-    expect(violations).toEqual([]);
+  }
+  return found;
+}
+
+describe('layer boundaries', () => {
+  it('theory imports only from inside src/theory (no UI, framework or browser code)', () => {
+    expect(violations(theoryDir, [theoryDir])).toEqual([]);
+  });
+
+  it('cards import only from src/cards and the theory engine', () => {
+    expect(violations(cardsDir, [cardsDir, theoryDir])).toEqual([]);
   });
 });

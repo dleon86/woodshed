@@ -9,6 +9,6 @@
     "tsBuildInfoFile": "node_modules/.tmp/app.tsbuildinfo"
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["src/theory/**"],
+  "exclude": ["src/theory/**", "src/**/*.test.ts"],
   "references": [{ "path": "./tsconfig.theory.json" }]
 }

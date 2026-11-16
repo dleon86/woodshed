@@ -11,6 +11,8 @@
   --accent: #8a5530;
   --accent-text: #ffffff;
   --accent-soft: #f0dfcd;
+  --good: #2f7d4f;
+  --bad: #b3412e;
   --shadow: 0 1px 2px rgb(60 40 20 / 0.08), 0 4px 16px rgb(60 40 20 / 0.06);
 
   --radius: 14px;
@@ -32,6 +34,8 @@
     --accent: #d9955f;
     --accent-text: #1c1714;
     --accent-soft: #3d2c1f;
+    --good: #5fbf85;
+    --bad: #e7765f;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.25);
   }
 }
@@ -47,6 +51,8 @@
   --accent: #d9955f;
   --accent-text: #1c1714;
   --accent-soft: #3d2c1f;
+  --good: #5fbf85;
+  --bad: #e7765f;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.25);
 }
 
@@ -280,24 +286,61 @@ select {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  aspect-ratio: 3 / 2;
-  max-height: 40dvh;
+  min-height: min(260px, 40dvh);
   width: 100%;
+  padding: 20px var(--gutter);
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  touch-action: pan-y; /* vertical scroll stays native; horizontal drags are swipes */
+  transition: border-color 0.15s;
+}
+
+.flashcard[data-swipe='got'] {
+  border-color: var(--good);
+}
+
+.flashcard[data-swipe='missed'] {
+  border-color: var(--bad);
 }
 
 .flashcard-prompt {
   font-family: var(--font-music);
   font-size: clamp(2rem, 9vw, 3.5rem);
   font-weight: 700;
+  line-height: 1.15;
 }
 
-.flashcard-hint {
+.flashcard-hint,
+.flashcard-question {
   color: var(--muted);
   font-size: 0.875rem;
+}
+
+.flashcard-question {
+  font-family: var(--font-music);
+  font-size: 1.1rem;
+}
+
+.flashcard-answer {
+  font-family: var(--font-music);
+  font-size: clamp(1.8rem, 8vw, 3rem);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.flashcard-detail {
+  font-family: var(--font-music);
+  font-size: 1.05rem;
+}
+
+.card-notes {
+  width: 100%;
+  margin: 4px 0;
 }
 
 .view-placeholder {
@@ -444,6 +487,255 @@ button.link {
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
+}
+
+/* ---------- Buttons ---------- */
+
+button.primary,
+button.secondary,
+.grade-buttons button {
+  min-height: 52px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button.primary {
+  border: 0;
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+button.primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+button.secondary {
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* ---------- Practice: deck builder ---------- */
+
+.builder {
+  display: grid;
+  gap: var(--gutter);
+  padding-bottom: 8px;
+}
+
+.builder h1 {
+  margin: 0;
+}
+
+.builder-heading {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.preset {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 14px var(--gutter);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  text-align: left;
+  cursor: pointer;
+}
+
+.preset-title {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.field {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.field legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-weight: 700;
+}
+
+.field p {
+  margin: 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  min-height: 44px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip[aria-pressed='true'],
+.tonic-grid button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.family-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1 1 140px;
+  text-align: left;
+}
+
+.chip-example {
+  font-family: var(--font-music);
+  font-size: 0.8rem;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.interval-chips .chip {
+  flex: 1 0 52px;
+  padding: 6px 0;
+}
+
+.start-bar {
+  position: sticky;
+  bottom: calc(-1 * var(--gutter));
+  display: grid;
+  gap: 10px;
+  margin: 0 calc(-1 * var(--gutter)) calc(-1 * var(--gutter));
+  padding: 12px var(--gutter) var(--gutter);
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+}
+
+/* ---------- Practice: drill ---------- */
+
+.drill {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.drill-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s;
+}
+
+.grade-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.grade-buttons .missed {
+  border: 2px solid var(--bad);
+  background: var(--surface);
+  color: var(--bad);
+}
+
+.grade-buttons .got {
+  border: 2px solid var(--good);
+  background: var(--good);
+  color: var(--surface);
+}
+
+.drill-hint {
+  margin: 0;
+  text-align: center;
+}
+
+/* ---------- Practice: summary ---------- */
+
+.summary {
+  display: grid;
+  gap: var(--gutter);
+}
+
+.summary h1,
+.summary h2 {
+  margin: 0;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.summary-stats > div {
+  display: flex;
+  flex-direction: column;
+  padding: var(--gutter);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.stat {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.missed-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.missed-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px var(--gutter);
+  border-top: 1px solid var(--border);
+  font-family: var(--font-music);
+}
+
+.missed-list li:first-child {
+  border-top: 0;
+}
+
+.summary-actions {
+  display: grid;
+  gap: 10px;
 }
 
 /* ---------- Tablet / desktop landscape ---------- */

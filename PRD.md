@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft 4 (M1 decisions recorded) |
+| **Status** | Draft 5 (M2 decisions recorded) |
 | **Date** | 2026-11-15 |
 | **Owner** | Danny |
 
@@ -305,6 +305,15 @@ Each milestone ends with something usable on the phone.
 | Melodic minor | Classical form: raised 6 and 7 ascending, natural minor descending. The engine keeps both forms |
 | Scale degree labels | Relative to the major scale (1 2 ♭3 4 5 ♭6 7), also used for chord formulas |
 | M1 on the phone | Explore gets a text scale browser (type, key, notes with degrees, signature, related keys) |
+| Card layer | `src/cards/` builds cards and runs sessions as pure TypeScript on top of the engine (no DOM, boundary-tested). Every card has a stable id for progress tracking (G-1) |
+| Paper deck | A one-tap preset that rebuilds the 14 paper cards exactly; tested as the M2 acceptance check |
+| Grading gestures (F-2) | Swipe right = got it, left = missed it, only after flipping. Buttons too; on a keyboard, Space flips and the arrow keys grade |
+| Missed cards (F-3) | A missed card returns 4 cards later, or last if fewer remain, until it is got right. The summary counts cards right the first time |
+| Key filter (F-4) | Filters by key signature: all, flat keys, sharp keys (C is in neither), or picked. Minor scale types add the minor keys. Interval cards use the major tonics of the chosen signatures as roots |
+| Interval wording | Names ("Perfect 5th above E♭"), numerals ("E♭ V"), or both. Numerals only for ascending perfect and major intervals, per the Roman numeral decision |
+| Theoretical keys | Never used as cards: a parallel key with no standard signature (G♭ minor) is skipped |
+| Session length | 10, 20, 50 or all cards per session (the timer from Q-6 comes with quizzes in M5) |
+| Deck settings storage | The last deck filter is kept in `localStorage`, read field by field so a stale value falls back to defaults |
 
 ### Open
 
