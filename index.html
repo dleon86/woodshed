@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Woodshed</title>
+    <meta name="description" content="Practice scales, key signatures, intervals and chords." />
+    <meta name="theme-color" content="#6b4226" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Woodshed" />
+    <script>
+      // Apply the saved theme before first paint so there is no light/dark flash.
+      // Must match the logic in src/state/theme.ts.
+      (function () {
+        try {
+          var pref = localStorage.getItem('woodshed.theme');
+          if (pref === 'light' || pref === 'dark') document.documentElement.dataset.theme = pref;
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#6b4226"/>
+  <!-- wood grain -->
+  <g fill="none" stroke="#7d5133" stroke-width="10" stroke-linecap="round">
+    <path d="M40 120c120-30 300 30 432-10"/>
+    <path d="M40 400c140 25 290-35 432 5"/>
+  </g>
+  <!-- two beamed eighth notes -->
+  <g fill="#f6f1ea">
+    <ellipse cx="190" cy="350" rx="52" ry="38" transform="rotate(-20 190 350)"/>
+    <ellipse cx="346" cy="318" rx="52" ry="38" transform="rotate(-20 346 318)"/>
+    <rect x="224" y="148" width="20" height="200"/>
+    <rect x="380" y="116" width="20" height="200"/>
+    <path d="M224 148 L400 116 L400 170 L224 202 Z"/>
+  </g>
+</svg>

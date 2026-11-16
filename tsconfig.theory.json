@@ -1,0 +1,12 @@
+{
+  // The theory engine: pure TypeScript, no DOM, no JSX, no UI imports.
+  // Compiling it without the DOM lib makes any accidental browser API use a type error.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": [],
+    "outDir": "node_modules/.tmp/theory",
+    "tsBuildInfoFile": "node_modules/.tmp/theory.tsbuildinfo"
+  },
+  "include": ["src/theory/**/*.ts"]
+}

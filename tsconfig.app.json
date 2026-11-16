@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "types": ["vite/client", "vite-plugin-pwa/client"],
+    "outDir": "node_modules/.tmp/app",
+    "tsBuildInfoFile": "node_modules/.tmp/app.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["src/theory/**"],
+  "references": [{ "path": "./tsconfig.theory.json" }]
+}
