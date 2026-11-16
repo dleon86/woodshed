@@ -294,7 +294,9 @@ select {
 /* Practice: card above view on phones, side by side on tablets */
 .split {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--gutter);
+  align-content: start;
 }
 
 .pane {
@@ -968,12 +970,13 @@ button.secondary {
     padding-left: var(--gutter);
   }
 
-  .split {
-    grid-template-columns: minmax(320px, 2fr) 3fr;
-    height: 100%;
-  }
+}
 
-  .flashcard {
-    max-height: none;
+/* Card and view side by side only in landscape (PRD section 3); portrait tablets stack them like phones. */
+@media (min-width: 900px) and (orientation: landscape) {
+  .split {
+    /* minmax(0, …): wide views scroll inside their pane instead of pushing it off screen. */
+    grid-template-columns: minmax(320px, 2fr) minmax(0, 3fr);
+    height: 100%;
   }
 }

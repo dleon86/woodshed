@@ -36,7 +36,7 @@ Built first for one user (Danny), and published so that other musicians can use 
 | Device | Use | Layout |
 |---|---|---|
 | Android phone (Chrome) | Quick drills, one hand | Portrait, one card at a time, view below the card |
-| iPad (Safari) | Longer sessions at an instrument | Landscape, card and instrument view side by side |
+| iPad (Safari) | Longer sessions at an instrument | Landscape: card and instrument view side by side. Portrait: view below the card, as on the phone |
 | Desktop browser | Development and testing | Same as iPad |
 
 The app must be usable while holding an instrument: large touch targets, and a hands-free path through a quiz when mic input is on (the next card advances by itself after a correct answer).
