@@ -80,6 +80,7 @@ html,
 body {
   margin: 0;
   height: 100%;
+  overflow: hidden; /* only .main scrolls */
 }
 
 body {
@@ -146,8 +147,17 @@ select {
 .shell {
   display: grid;
   grid-template-areas: 'top' 'main' 'nav';
-  grid-template-rows: auto 1fr auto;
-  height: 100dvh;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* Pinned to the screen edges, not sized with 100dvh: the bottom tabs must stay
+     on screen while a mobile browser's address bar shows or hides. */
+  position: fixed;
+  inset: 0;
+}
+
+.nav {
+  /* Always above page content such as the sticky Start bar. */
+  position: relative;
+  z-index: 2;
 }
 
 .topbar {
@@ -298,6 +308,16 @@ select {
   font: inherit;
   color: inherit;
   text-align: center;
+}
+
+.mic-level {
+  flex-basis: 100%;
+  display: grid;
+  gap: 4px;
+}
+
+.mic-level .progress span {
+  transition: none;
 }
 
 .mic-check .mic-readout {
@@ -982,7 +1002,7 @@ button.secondary {
   .shell {
     grid-template-areas: 'nav top' 'nav main';
     grid-template-columns: auto 1fr;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
   }
 
   .topbar {

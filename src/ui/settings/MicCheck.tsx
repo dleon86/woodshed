@@ -1,5 +1,5 @@
 import { useEffect } from 'preact/hooks';
-import { micError, micState, startMicCheck, stopMicCheck, tuner } from '../../state/sound';
+import { micError, micLevel, micState, startMicCheck, stopMicCheck, tuner } from '../../state/sound';
 import { pitchFromMidi, pitchName } from '../../theory';
 
 /** P-9: what to tell the player in each mic state. */
@@ -33,6 +33,16 @@ export function MicCheck() {
       <button type="button" class={on ? 'secondary' : 'primary'} onClick={() => (on ? stopMicCheck() : void startMicCheck())}>
         {on ? 'Stop' : 'Start'}
       </button>
+      {state === 'listening' && (
+        <div class="mic-level">
+          <span class="muted small">Input level</span>
+          {/* Loudness is tiny in absolute terms, so the bar uses a square-root scale. */}
+          <div class="progress" role="meter" aria-label="Input level" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(Math.min(1, Math.sqrt(micLevel.value * 4)) * 100)}>
+            <span style={{ width: `${Math.min(1, Math.sqrt(micLevel.value * 4)) * 100}%` }} />
+          </div>
+          <span class="muted small">{micLevel.value < 0.003 ? 'No sound is reaching the microphone.' : 'Sound is arriving.'}</span>
+        </div>
+      )}
       <div class="mic-readout" role="status" aria-live="polite">
         {state === 'listening' && reading ? (
           <>

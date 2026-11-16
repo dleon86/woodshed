@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft 9 (M4 decisions recorded) |
+| **Status** | Draft 10 (M4 device test results recorded) |
 | **Date** | 2026-11-15 |
 | **Owner** | Danny |
 
@@ -167,7 +167,8 @@ Three interchangeable views, used both to display answers and to enter them.
 - **A-5** Optional drone on the root, for intonation practice.
 - **A-6** Reference pitch adjustable (default A = 440 Hz).
 - **A-7** Audio starts only after a tap, as mobile browsers require.
-- **A-8** Sound plays even when an iPad or iPhone is in silent mode. Web audio is muted by the silent switch unless the page asks for playback audio (`navigator.audioSession.type = 'playback'`, Safari 16.4 and later). Checked on the real iPad in M4.
+- **A-8** Silent mode is respected: when an iPad or iPhone is in silent mode the app makes no sound, like other web pages. (The first version of this requirement asked for sound in silent mode. On the real iPad it did not play, and muting was judged the right behaviour.) The page still declares a playback audio session where the browser supports it, which costs nothing.
+- **A-9** Sound recovers by itself after an interruption. iOS stops a page's audio when the tab is left or the device sleeps; the next tap on Play or Drone rebuilds the audio instead of needing a reload.
 
 ### 6.5 Pitch detection (mic input)
 
@@ -238,7 +239,7 @@ Confirmed at M0 unless marked otherwise.
 - **Structure:** a theory engine with no user-interface code, covered by automated tests, with the views, audio and mic layers built on top of it. Correct note spelling is the part most worth testing heavily.
 - **Language and tooling:** TypeScript (strict). Build tool **Vite**. UI framework **Preact** with **Preact Signals** for shared state (about 4 KB, plain TSX, so the engine and UI share one language and toolchain). Tests with **Vitest**. Hash-based routing so GitHub Pages needs no server rewrites. The theory engine is its own TypeScript project with no DOM types, and a test fails if it imports anything outside `src/theory/`.
 - **Rendering:** the keyboard, fretboard and staff drawn as SVG so they scale cleanly between phone and tablet.
-- **Audio:** the browser's Web Audio API, behind a small playback interface (A-4), with the playback audio session requested for iOS silent mode (A-8).
+- **Audio:** the browser's Web Audio API, behind a small playback interface (A-4). An audio context that was running and has stopped is replaced on the next tap, never waited on (A-9); the mic analyses on a fresh context.
 - **Pitch detection:** the browser's microphone API with an autocorrelation-family algorithm (YIN or McLeod), with the browser's echo cancellation, noise suppression and automatic gain turned off because they distort instrument sound. The analysis window must be long enough for bass low E.
 - **Hosting:** needs HTTPS, because browsers only allow microphone access on secure sites. The repository is **public** and the app is hosted on GitHub Pages.
 - **Existing libraries:** evaluate established open-source libraries for theory, notation and pitch detection before writing each from scratch.
@@ -351,6 +352,9 @@ Each milestone ends with something usable on the phone.
 | Synth (A-4) | Each note is four sine/triangle partials with a fast attack and a decay that is longer for low notes. The upper partials keep bass notes audible on phone speakers |
 | Drone (A-5) | A toggle above every view. It holds the root of the answer on screen, one octave below where the root is drawn, and follows the card |
 | Reference pitch (A-6) | 415 to 466 Hz in Settings, default 440; applies to playback, the drone and the mic check |
+| M4 device test (Pixel, iPad) | Playback, drone and the mic check work on both. Found and fixed: the drone was close to inaudible (pure low sine tones on small speakers; now a triangle wave with strong partials at note volume); Play on the iPad stopped until a reload after leaving the tab (A-9); the pitch detector stopped at 1,500 Hz, below a whistle (now up to the top of the piano, 4,186 Hz). The mic check gained an input level bar to tell "no sound arriving" from "no clear note" |
+| Silent mode (A-8) | Respected, not overridden |
+| App shell | Pinned to the screen edges (`position: fixed`), not sized with `100dvh`, with the section tabs above page content. On the Pixel the sticky Start bar once covered the tabs; it could not be reproduced, and this removes the likely cause |
 | No audio support | Play and Drone are disabled, not silent, in a browser without Web Audio |
 | Mic check (M4) | A test block in Settings: start, permission states (P-9), then note, cents and Hz. Playback and the drone stop while it listens (P-8); leaving Settings releases the mic. The real tuner is M7 |
 | Audio testing limits | Browser tests check the scheduled pitches and the mic path on Chromium. Playwright's WebKit build for Windows has no Web Audio, so Safari audio is verified only on the real iPad |

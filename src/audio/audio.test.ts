@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { midiToFrequency } from '../theory';
-import { detectPitch, tunerReading } from './pitch';
+import { detectPitch, level, tunerReading } from './pitch';
 import { type PlaybackOptions, sequenceFor, sequenceLength } from './sequence';
 
 const options = (o: Partial<PlaybackOptions> = {}): PlaybackOptions => ({
@@ -76,6 +76,23 @@ describe('pitch detection (P-1, P-2)', () => {
       expect(reading, `midi ${midi}`).not.toBeNull();
       expect(Math.abs(cents(reading!.hz, hz)), `midi ${midi}: ${reading!.hz} vs ${hz}`).toBeLessThan(5);
     }
+  });
+
+  it('follows the keyboard to its top note and a whistle (P-2)', () => {
+    // Periods are only a dozen samples long up here, so allow a little more error.
+    for (let midi = 89; midi <= 108; midi++) {
+      const hz = midiToFrequency(midi);
+      const reading = detectPitch(wave(hz, RATE, SIZE, [1, 0.3]), RATE);
+      expect(reading, `midi ${midi}`).not.toBeNull();
+      expect(Math.abs(cents(reading!.hz, hz)), `midi ${midi}: ${reading!.hz} vs ${hz}`).toBeLessThan(15);
+    }
+    const whistle = detectPitch(wave(2000, RATE, SIZE, [1]), RATE)!;
+    expect(Math.abs(cents(whistle.hz, 2000))).toBeLessThan(10);
+  });
+
+  it('measures loudness', () => {
+    expect(level(new Float32Array(SIZE))).toBe(0);
+    expect(level(wave(440, RATE, SIZE, [1]))).toBeCloseTo(0.3 / Math.SQRT2, 2);
   });
 
   it('reaches 5-string bass low B and works at 44.1 kHz', () => {

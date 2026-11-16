@@ -107,6 +107,8 @@ export function droneFor(show: Show | undefined): void {
 export const micState = signal<MicState>('off');
 export const micError = signal('');
 export const tuner = signal<TunerReading | null>(null);
+/** Input loudness 0–1 while listening, so "no sound arriving" and "no clear note" can be told apart. */
+export const micLevel = signal(0);
 let mic: MicSession | undefined;
 
 export async function startMicCheck(): Promise<void> {
@@ -117,7 +119,9 @@ export async function startMicCheck(): Promise<void> {
   stopDrone();
   droning = undefined;
   mic = await startMic(
-    (reading) => {
+    (reading, loudness) => {
+      // Smooth the meter: jump up at once, fall back gradually.
+      micLevel.value = Math.max(loudness, micLevel.value * 0.9);
       // Hold the last reading through brief gaps so the display does not flicker.
       if (reading && reading.clarity > 0.8) tuner.value = tunerReading(reading.hz, referencePitch.value);
     },
@@ -134,4 +138,5 @@ export function stopMicCheck(): void {
   mic?.stop();
   mic = undefined;
   tuner.value = null;
+  micLevel.value = 0;
 }

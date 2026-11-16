@@ -22,6 +22,18 @@ async function expectNoOverflow(page: Page): Promise<void> {
   expect(overflow, 'horizontal overflow in px').toEqual({ page: 0, main: 0 });
 }
 
+/** The section tabs must stay fully on screen and on top (the sticky Start bar once hid them on a phone). */
+async function expectTabsOnScreen(page: Page): Promise<void> {
+  const state = await page.evaluate(() => {
+    const nav = document.querySelector('.nav')!;
+    const r = nav.getBoundingClientRect();
+    const link = nav.querySelector('a:last-child')!.getBoundingClientRect();
+    const top = document.elementFromPoint(link.left + link.width / 2, link.top + link.height / 2);
+    return { inside: r.top >= 0 && r.bottom <= window.innerHeight + 0.5 && r.right <= window.innerWidth + 0.5, onTop: !!top && nav.contains(top) };
+  });
+  expect(state, 'section tabs on screen and not covered').toEqual({ inside: true, onTop: true });
+}
+
 async function open(page: Page, hash = '#/practice'): Promise<void> {
   await page.goto(`./${hash}`);
   await page.evaluate(() => localStorage.clear());
@@ -46,6 +58,7 @@ test('every section loads without errors or overflow', async ({ page }) => {
     await page.getByRole('link', { name: section }).click();
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expectNoOverflow(page);
+    await expectTabsOnScreen(page);
   }
   expect(errors).toEqual([]);
 });
@@ -154,6 +167,10 @@ test('layout holds with wider text (other system fonts, large text settings)', a
   for (const family of [/^Scale spelling/, /^Interval naming/]) await page.getByRole('button', { name: family }).click();
   await page.getByRole('radio', { name: 'Pick' }).click();
   await expectNoOverflow(page);
+  await expectTabsOnScreen(page);
+  // Scrolled to the very bottom, where the sticky Start bar sits against the tabs.
+  await page.locator('.main').evaluate((el) => el.scrollTo(0, el.scrollHeight));
+  await expectTabsOnScreen(page);
   await page.getByLabel('Instrument').selectOption('guitar');
   await page.getByRole('radio', { name: 'All', exact: true }).first().click(); // keys back to all
   await page.getByRole('button', { name: /^Start · / }).click();
@@ -171,6 +188,16 @@ async function recordOscillators(page: Page): Promise<() => Promise<number[]>> {
     const started: number[] = [];
     (window as unknown as { __started: number[] }).__started = started;
     if (typeof OscillatorNode === 'undefined') return;
+    // Keep every audio context the page makes, so a test can interrupt one as iOS does.
+    const contexts: AudioContext[] = [];
+    (window as unknown as { __contexts: AudioContext[] }).__contexts = contexts;
+    const Original = window.AudioContext;
+    window.AudioContext = class extends Original {
+      constructor(options?: AudioContextOptions) {
+        super(options);
+        contexts.push(this);
+      }
+    };
     const start = OscillatorNode.prototype.start;
     OscillatorNode.prototype.start = function (when?: number) {
       // Each note is several partials; only the lowest one of a group is the pitch that is heard.
@@ -254,10 +281,33 @@ test('the mic check shows a note heard through the microphone', async ({ page, b
   test.skip(browserName !== 'chromium', 'only Chromium has a fake microphone to test with');
   await open(page, '#/settings');
   await page.getByRole('button', { name: 'Start' }).click();
-  await expect(page.locator('.mic-readout')).toContainText('Listening');
+  await expect(page.getByRole('meter', { name: 'Input level' })).toBeVisible();
   // Chromium's fake microphone beeps only now and then, so allow time for one to be caught.
   await expect(page.locator('.mic-note')).toBeVisible({ timeout: 45_000 });
   await expect(page.locator('.mic-readout')).toContainText('Hz');
   await page.getByRole('button', { name: 'Stop' }).click();
   await expect(page.locator('.mic-readout')).toContainText('Tap Start');
+});
+
+test('Play recovers after the audio is interrupted (iPad: leaving the tab or sleeping)', async ({ page }) => {
+  const started = await recordOscillators(page);
+  await open(page, '#/explore');
+  await skipWithoutAudio(page);
+  const contexts = () => page.evaluate(() => (window as unknown as { __contexts: AudioContext[] }).__contexts.length);
+
+  await page.getByRole('button', { name: '▶ Play' }).click();
+  await expect(page.getByRole('button', { name: '■ Stop' })).toBeVisible();
+  await page.getByRole('button', { name: '■ Stop' }).click();
+  expect(await contexts()).toBe(1);
+  const before = (await started()).length;
+
+  // What iOS does behind the page's back: the context stops running.
+  await page.evaluate(() => (window as unknown as { __contexts: AudioContext[] }).__contexts[0]!.suspend());
+
+  await page.getByRole('button', { name: '▶ Play' }).click();
+  await expect(page.getByRole('button', { name: '■ Stop' })).toBeVisible();
+  expect(await contexts(), 'a fresh audio context replaced the interrupted one').toBe(2);
+  expect((await started()).length, 'notes were scheduled again').toBeGreaterThan(before);
+  const running = await page.evaluate(() => (window as unknown as { __contexts: AudioContext[] }).__contexts[1]!.state);
+  expect(running).toBe('running');
 });

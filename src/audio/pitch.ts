@@ -13,7 +13,7 @@ export interface PitchReading {
 }
 
 export interface DetectOptions {
-  /** Lowest and highest frequency searched. Defaults cover bass low B to the top of the guitar. */
+  /** Lowest and highest frequency searched. Defaults cover 5-string bass low B to the top of the piano (P-2). */
   readonly minHz?: number;
   readonly maxHz?: number;
   /** Below this RMS level the buffer counts as silence. */
@@ -28,7 +28,7 @@ export function detectPitch(
   sampleRate: number,
   options: DetectOptions = {},
 ): PitchReading | null {
-  const { minHz = 28, maxHz = 1500, silence = 0.01, threshold = 0.15 } = options;
+  const { minHz = 28, maxHz = 4300, silence = 0.01, threshold = 0.15 } = options;
   const n = samples.length;
 
   let energy = 0;
@@ -75,6 +75,13 @@ export function detectPitch(
   const shift = denominator === 0 ? 0 : (0.5 * (a - c)) / denominator;
 
   return { hz: sampleRate / (best + shift), clarity: Math.max(0, 1 - b) };
+}
+
+/** Loudness of a buffer, 0–1 (root mean square). */
+export function level(samples: Float32Array | readonly number[]): number {
+  let energy = 0;
+  for (let i = 0; i < samples.length; i++) energy += samples[i]! * samples[i]!;
+  return samples.length ? Math.sqrt(energy / samples.length) : 0;
 }
 
 /** A frequency as the nearest note and how far off it is. */

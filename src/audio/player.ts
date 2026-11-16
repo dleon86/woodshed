@@ -31,23 +31,68 @@ export const audioSupported = typeof AudioContext !== 'undefined';
 
 let context: AudioContext | undefined;
 let output: GainNode | undefined;
+/** Whether the current context has been running: only then does "not running" mean interrupted. */
+let hasRun = false;
+
+function createContext(): AudioContext {
+  const ctx = new AudioContext({ latencyHint: 'interactive' });
+  hasRun = ctx.state === 'running';
+  ctx.addEventListener('statechange', () => {
+    if (ctx === context && ctx.state === 'running') hasRun = true;
+  });
+  // A compressor keeps several notes at once (harmonic intervals, later chords) from clipping.
+  const compressor = ctx.createDynamicsCompressor();
+  output = ctx.createGain();
+  output.gain.value = 0.9;
+  output.connect(compressor).connect(ctx.destination);
+  return ctx;
+}
+
+/** Throw away the audio context. The next tap builds a fresh one. */
+export function resetAudio(): void {
+  const old = context;
+  context = undefined;
+  output = undefined;
+  hasRun = false;
+  playing = undefined;
+  drone = undefined;
+  void old?.close().catch(() => {});
+}
 
 /**
- * The shared audio context. Created on first use, which must be inside a tap
- * (A-7): browsers refuse to start audio from page load.
+ * The shared audio context. Call from inside a tap (A-7): browsers refuse to
+ * start audio from page load.
+ *
+ * iOS interrupts a page's audio when the tab is left or the device sleeps,
+ * and a context in that state may never resume. So a context that is not
+ * running is replaced, not waited on: a new one made inside a tap always
+ * starts. A drone that was sounding is restarted on the new context.
  */
 export async function audioContext(): Promise<AudioContext> {
+  if (context && hasRun && context.state !== 'running') {
+    const droning = droneSpec;
+    resetAudio();
+    context = createContext();
+    if (droning) void startDrone(droning.midi, droning.reference);
+  }
   if (!context) {
     setAudioSession('playback');
-    context = new AudioContext({ latencyHint: 'interactive' });
-    // A compressor keeps several notes at once (harmonic intervals, later chords) from clipping.
-    const compressor = context.createDynamicsCompressor();
-    output = context.createGain();
-    output.gain.value = 0.9;
-    output.connect(compressor).connect(context.destination);
+    context = createContext();
   }
-  // iOS suspends the context when the app goes to the background.
-  if (context.state !== 'running') await context.resume();
+  const ctx = context;
+  // A new context can report "suspended" for a moment even inside a tap.
+  if (ctx.state !== 'running') await ctx.resume();
+  if (ctx === context && ctx.state === 'running') hasRun = true;
+  return ctx;
+}
+
+/**
+ * A context for analysing the microphone, without waiting for it to start:
+ * outside a tap the start can stall, and the caller keeps nudging it.
+ */
+export function listeningContext(): AudioContext {
+  context ??= createContext();
+  if (context.state !== 'running') void context.resume().catch(() => {});
   return context;
 }
 
@@ -144,27 +189,36 @@ export async function play(events: readonly NoteEvent[], reference: number, onEn
 /* ---------- Drone (A-5) ---------- */
 
 let drone: { oscillators: OscillatorNode[]; gain: GainNode } | undefined;
+/** What the drone should be sounding, kept so it can restart on a new audio context. */
+let droneSpec: { midi: number; reference: number } | undefined;
 
-/** A steady tone on one note, for intonation practice. Replaces any drone already sounding. */
+/**
+ * A steady tone on one note, for intonation practice. Replaces any drone
+ * already sounding. It sits below the answer, where small speakers are weak,
+ * so it is built from a triangle wave and strong upper partials and played
+ * as loud as a note: pure low sine tones were close to inaudible on a phone.
+ */
 export async function startDrone(midi: number, reference: number): Promise<void> {
+  droneSpec = { midi, reference };
   const ctx = await audioContext();
-  stopDrone();
+  silenceDrone();
   const hz = midiToFrequency(midi, reference);
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(0, ctx.currentTime);
-  gain.gain.linearRampToValueAtTime(0.16, ctx.currentTime + 0.3);
+  gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.3);
   gain.connect(output!);
-  // The root, its octave and a quiet fifth above: a full but neutral tone to tune against.
-  const oscillators = [
-    [1, 1],
-    [2, 0.5],
-    [3, 0.12],
-  ].map(([multiple, level]) => {
+  const partials: Array<[number, number, OscillatorType]> = [
+    [1, 1, 'triangle'],
+    [2, 0.7, 'sine'],
+    [3, 0.4, 'sine'],
+    [4, 0.25, 'sine'],
+  ];
+  const oscillators = partials.map(([multiple, level, type]) => {
     const osc = ctx.createOscillator();
     const g = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = hz * multiple!;
-    g.gain.value = level!;
+    osc.type = type;
+    osc.frequency.value = hz * multiple;
+    g.gain.value = level;
     osc.connect(g).connect(gain);
     osc.start();
     return osc;
@@ -172,11 +226,16 @@ export async function startDrone(midi: number, reference: number): Promise<void>
   drone = { oscillators, gain };
 }
 
-export function stopDrone(): void {
+function silenceDrone(): void {
   if (!drone || !context) return;
   const { oscillators, gain } = drone;
   drone = undefined;
   gain.gain.cancelScheduledValues(context.currentTime);
   gain.gain.setTargetAtTime(0, context.currentTime, 0.08);
   for (const osc of oscillators) osc.stop(context.currentTime + 0.6);
+}
+
+export function stopDrone(): void {
+  droneSpec = undefined;
+  silenceDrone();
 }

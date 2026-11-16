@@ -2,8 +2,8 @@
  * Microphone input for pitch detection (PRD 6.5). Audio is analysed on the
  * device and never recorded or sent anywhere (P-10).
  */
-import { type PitchReading, detectPitch } from './pitch';
-import { audioContext, setAudioSession } from './player';
+import { type PitchReading, detectPitch, level } from './pitch';
+import { listeningContext, resetAudio, setAudioSession } from './player';
 
 /** P-9: the states a mic exercise must be able to show. */
 export type MicState = 'off' | 'asking' | 'listening' | 'denied' | 'unavailable' | 'error';
@@ -17,11 +17,12 @@ export interface MicSession {
 
 /**
  * Start listening. `onReading` gets the detected pitch (or null for silence
- * or noise) about every animation frame; `onState` reports permission and
- * failure states. Resolves once listening has started or failed.
+ * or noise) and the input loudness (0–1) about every animation frame;
+ * `onState` reports permission and failure states. Resolves once listening
+ * has started or failed.
  */
 export async function startMic(
-  onReading: (reading: PitchReading | null) => void,
+  onReading: (reading: PitchReading | null, loudness: number) => void,
   onState: (state: MicState, detail?: string) => void,
 ): Promise<MicSession> {
   const none: MicSession = { stop() {} };
@@ -47,7 +48,10 @@ export async function startMic(
     return none;
   }
 
-  const ctx = await audioContext();
+  // A context built before the mic was opened can keep delivering silence on iOS,
+  // so analyse on a fresh one. (A page that is capturing may start audio without a tap.)
+  resetAudio();
+  const ctx = listeningContext();
   const source = ctx.createMediaStreamSource(stream);
   const analyser = ctx.createAnalyser();
   analyser.fftSize = BUFFER_SIZE;
@@ -56,8 +60,9 @@ export async function startMic(
 
   let frame = 0;
   const tick = () => {
+    if (ctx.state !== 'running') void ctx.resume().catch(() => {});
     analyser.getFloatTimeDomainData(buffer);
-    onReading(detectPitch(buffer, ctx.sampleRate));
+    onReading(detectPitch(buffer, ctx.sampleRate), level(buffer));
     frame = requestAnimationFrame(tick);
   };
   frame = requestAnimationFrame(tick);
@@ -69,6 +74,7 @@ export async function startMic(
       source.disconnect();
       for (const track of stream.getTracks()) track.stop(); // releases the mic and its indicator
       setAudioSession('playback');
+      resetAudio(); // playback starts again on a context made for the playback session
       onState('off');
     },
   };
