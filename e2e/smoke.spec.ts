@@ -28,6 +28,13 @@ async function open(page: Page, hash = '#/practice'): Promise<void> {
   await page.reload();
 }
 
+/** The builder's default deck: the 15 major key signature cards. */
+const DECK_SIZE = 15;
+
+async function startDefaultDeck(page: Page): Promise<void> {
+  await page.getByRole('button', { name: `Start · ${DECK_SIZE} of ${DECK_SIZE} cards` }).click();
+}
+
 async function flip(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Show answer' }).click();
 }
@@ -43,49 +50,49 @@ test('every section loads without errors or overflow', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('the paper deck can be drilled to the summary', async ({ page }) => {
+test('a deck can be drilled to the summary', async ({ page }) => {
   const errors = watchErrors(page);
   await open(page);
-  await page.getByRole('button', { name: /Paper deck/ }).click();
-  for (let i = 0; i < 14; i++) {
+  await startDefaultDeck(page);
+  for (let i = 0; i < DECK_SIZE; i++) {
     await flip(page);
     await expectNoOverflow(page);
     await page.getByRole('button', { name: 'Got it' }).click();
   }
   await expect(page.getByRole('heading', { name: 'Session done' })).toBeVisible();
-  await expect(page.locator('.summary-stats')).toContainText('14 / 14');
+  await expect(page.locator('.summary-stats')).toContainText(`${DECK_SIZE} / ${DECK_SIZE}`);
   expect(errors).toEqual([]);
 });
 
 test('a missed card returns, and "Same deck again" restarts the chosen deck', async ({ page }) => {
   await open(page);
-  await page.getByRole('button', { name: /Paper deck/ }).click();
+  await startDefaultDeck(page);
   await flip(page);
   await page.getByRole('button', { name: 'Missed it' }).click();
-  // 13 other cards plus the missed one coming back.
-  for (let i = 0; i < 14; i++) {
+  // The other cards plus the missed one coming back.
+  for (let i = 0; i < DECK_SIZE; i++) {
     await flip(page);
     await page.getByRole('button', { name: 'Got it' }).click();
   }
-  await expect(page.locator('.summary-stats')).toContainText('13 / 14');
+  await expect(page.locator('.summary-stats')).toContainText(`${DECK_SIZE - 1} / ${DECK_SIZE}`);
   await page.getByRole('button', { name: 'Practice 1 missed card' }).click();
   await expect(page.locator('.drill-top')).toContainText('0 / 1');
   await flip(page);
   await page.getByRole('button', { name: 'Got it' }).click();
   await page.getByRole('button', { name: 'Same deck again' }).click();
-  await expect(page.locator('.drill-top')).toContainText('0 / 14');
+  await expect(page.locator('.drill-top')).toContainText(`0 / ${DECK_SIZE}`);
 });
 
 test('a drill in progress survives a reload', async ({ page }) => {
   await open(page);
-  await page.getByRole('button', { name: /Paper deck/ }).click();
+  await startDefaultDeck(page);
   for (let i = 0; i < 3; i++) {
     await flip(page);
     await page.getByRole('button', { name: 'Got it' }).click();
   }
   const front = await page.locator('.flashcard-prompt').innerText();
   await page.reload();
-  await expect(page.locator('.drill-top')).toContainText('3 / 14');
+  await expect(page.locator('.drill-top')).toContainText(`3 / ${DECK_SIZE}`);
   await expect(page.locator('.flashcard-prompt')).toHaveText(front);
 });
 
@@ -111,7 +118,7 @@ test('the instrument picks the view, and the staff can be pinned', async ({ page
 
 test('card and view sit side by side only in wide landscape', async ({ page }) => {
   await open(page);
-  await page.getByRole('button', { name: /Paper deck/ }).click();
+  await startDefaultDeck(page);
   await flip(page);
   const card = (await page.locator('.card-pane').boundingBox())!;
   const view = (await page.locator('.view-pane').boundingBox())!;
@@ -148,7 +155,8 @@ test('layout holds with wider text (other system fonts, large text settings)', a
   await page.getByRole('radio', { name: 'Pick' }).click();
   await expectNoOverflow(page);
   await page.getByLabel('Instrument').selectOption('guitar');
-  await page.getByRole('button', { name: /Paper deck/ }).click();
+  await page.getByRole('radio', { name: 'All', exact: true }).first().click(); // keys back to all
+  await page.getByRole('button', { name: /^Start · / }).click();
   await flip(page);
   await expectNoOverflow(page);
   await page.getByRole('button', { name: 'Pin staff' }).click();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_DECK, V1_INTERVALS, buildDeck, cardIndex, paperDeck, selectedFifths } from './generate';
+import { DEFAULT_DECK, V1_INTERVALS, buildDeck, cardIndex, selectedFifths } from './generate';
 import { answer, isDone, restoreSession, retryIndex, startSession, storeSession, summarize } from './session';
 import { type Card, type DeckConfig, FAMILIES } from './types';
 
@@ -17,35 +17,31 @@ const EVERYTHING: DeckConfig = {
 const deck = (overrides: Partial<DeckConfig>) => buildDeck({ ...DEFAULT_DECK, ...overrides });
 const text = (c: Card) => [c.front, c.frontNote ?? '', c.answer, ...c.details, ...(c.notes ?? []).map((n) => n.note)];
 
-describe('the paper deck (PRD appendix, M2 acceptance)', () => {
-  const cards = paperDeck();
-
-  it('has the nine white cards with counts, scale, degrees and enharmonic twins', () => {
-    const white = cards.slice(0, 9).map((c) => [c.front, c.answer, c.details.at(-1)]);
-    expect(white).toEqual([
-      ['B♭ major', '2♭', 'B♭ E♭'],
-      ['C♯ major', '7♯', 'Enharmonic: D♭ major (5♭)'],
-      ['F♯ major', '6♯', 'Enharmonic: G♭ major (6♭)'],
-      ['A♭ major', '4♭', 'B♭ E♭ A♭ D♭'],
-      ['G♭ major', '6♭', 'Enharmonic: F♯ major (6♯)'],
-      ['C♭ major', '7♭', 'Enharmonic: B major (5♯)'],
-      ['E♭ major', '3♭', 'B♭ E♭ A♭'],
-      ['B major', '5♯', 'Enharmonic: C♭ major (7♭)'],
-      ['D♭ major', '5♭', 'Enharmonic: C♯ major (7♯)'],
-    ]);
-    const cSharp = cards[1]!;
+describe('key signature and numeral cards (checked against the original handwritten cards)', () => {
+  it('give counts, accidentals, the scale with degrees, and enharmonic twins', () => {
+    const custom = [-2, 7, 6, -4, -6, -7, -3, 5, -5];
+    const cards = deck({ families: ['key-signature'], keys: 'custom', customKeys: custom });
+    const byFront = new Map(cards.map((c) => [c.front, [c.answer, c.details.at(-1)]]));
+    expect(Object.fromEntries(byFront)).toEqual({
+      'B♭ major': ['2♭', 'B♭ E♭'],
+      'C♯ major': ['7♯', 'Enharmonic: D♭ major (5♭)'],
+      'F♯ major': ['6♯', 'Enharmonic: G♭ major (6♭)'],
+      'A♭ major': ['4♭', 'B♭ E♭ A♭ D♭'],
+      'G♭ major': ['6♭', 'Enharmonic: F♯ major (6♯)'],
+      'C♭ major': ['7♭', 'Enharmonic: B major (5♯)'],
+      'E♭ major': ['3♭', 'B♭ E♭ A♭'],
+      'B major': ['5♯', 'Enharmonic: C♭ major (7♭)'],
+      'D♭ major': ['5♭', 'Enharmonic: C♯ major (7♯)'],
+    });
+    const cSharp = cards.find((c) => c.front === 'C♯ major')!;
     expect(cSharp.notes?.map((n) => n.note).join(' ')).toBe('C♯ D♯ E♯ F♯ G♯ A♯ B♯ C♯');
     expect(cSharp.notes?.map((n) => n.label).join(' ')).toBe('1 2 3 4 5 6 7 8');
   });
 
-  it('has the five green "note + V" cards', () => {
-    expect(cards.slice(9).map((c) => `${c.front} → ${c.answer}`)).toEqual([
-      'E♭ V → B♭',
-      'A V → E',
-      'G V → D',
-      'E V → B',
-      'C V → G',
-    ]);
+  it('write "note + V" cards', () => {
+    const cards = deck({ families: ['interval'], intervals: ['P5'], roots: 'natural', wording: 'numerals' });
+    const fifths = cards.map((c) => `${c.front} → ${c.answer}`);
+    for (const card of ['A V → E', 'G V → D', 'E V → B', 'C V → G']) expect(fifths).toContain(card);
   });
 });
 
@@ -181,7 +177,7 @@ describe('sessions (F-1 to F-3)', () => {
 
   it('survives a round trip through storage as ids', () => {
     const index = cardIndex();
-    let s = startSession(paperDeck(), { random: fixedOrder, now: 1000 });
+    let s = startSession(deck({ families: ['key-signature', 'interval'], wording: 'both' }), { random: fixedOrder, now: 1000 });
     s = answer(s, false);
     s = answer(s, true);
     const restored = restoreSession(JSON.parse(JSON.stringify(storeSession(s))), (id) => index.get(id));
@@ -202,6 +198,6 @@ describe('sessions (F-1 to F-3)', () => {
   it('can look up every card any deck can contain', () => {
     const index = cardIndex();
     const fromKeys = deck({ families: [...FAMILIES], keys: 'flats', roots: 'keys', wording: 'both', directions: ['up', 'down'] });
-    for (const card of [...fromKeys, ...paperDeck()]) expect(index.has(card.id), card.id).toBe(true);
+    for (const card of fromKeys) expect(index.has(card.id), card.id).toBe(true);
   });
 });

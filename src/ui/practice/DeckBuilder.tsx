@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact';
-import { type Family, FAMILIES, FAMILY_INFO, V1_INTERVALS, paperDeck } from '../../cards';
+import { type Family, FAMILIES, FAMILY_INFO, V1_INTERVALS } from '../../cards';
 import {
   SESSION_LENGTHS,
   deckCards,
@@ -73,18 +73,10 @@ export function DeckBuilder() {
   const sessionCount = length === 0 ? count : Math.min(length, count);
   const uses = (group: 'keys' | 'scales' | 'intervals') =>
     config.families.some((f) => FAMILY_INFO[f].group === group);
-  const paper = paperDeck();
 
   return (
     <section class="page builder" aria-labelledby="practice-title">
       <h1 id="practice-title">Practice</h1>
-
-      <button type="button" class="preset" onClick={() => start(paper, 0)}>
-        <span class="preset-title">Paper deck</span>
-        <span class="muted small">The original {paper.length} cards: key signatures and fifths</span>
-      </button>
-
-      <h2 class="builder-heading">Or build a deck</h2>
 
       {GROUPS.map(([group, label]) => (
         <Field key={group} label={label}>

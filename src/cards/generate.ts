@@ -16,7 +16,6 @@ import {
   intervalId,
   intervalName,
   isStandardKey,
-  key,
   keyName,
   keySignature,
   majorKeyFor,
@@ -86,7 +85,7 @@ function scaleNotes(s: Scale): LabelledNote[] {
   return s.degrees.map((d) => ({ note: noteName(d.note), label: String(d.degree) }));
 }
 
-/** "7♯ / 5♭ (D♭ major)" style twin line, as on the white paper cards. */
+/** The enharmonic twin line on key signature cards: "Enharmonic: D♭ major (5♭)". */
 function twinText(k: Key): string | undefined {
   const twin = enharmonicKey(k);
   return twin && `Enharmonic: ${keyName(twin)} (${signatureCount(keySignature(twin))})`;
@@ -305,17 +304,6 @@ export function buildDeck(config: DeckConfig): Card[] {
   return cards;
 }
 
-/**
- * The original paper deck (PRD appendix): nine white key signature cards and
- * five green "note + V" cards. The M2 acceptance check.
- */
-export function paperDeck(): Card[] {
-  const white = ['Bb', 'C#', 'F#', 'Ab', 'Gb', 'Cb', 'Eb', 'B', 'Db'].map((t) => keySignatureCard(key(parseNote(t), 'major')));
-  const fifth = parseInterval('P5');
-  const green = ['Eb', 'A', 'G', 'E', 'C'].map((t) => intervalCard(parseNote(t), fifth, 'up', true));
-  return [...white, ...green];
-}
-
 /** Every card the app can build, by id: used to restore a saved session from ids alone. */
 export function cardIndex(): Map<string, Card> {
   const everything = buildDeck({
@@ -329,7 +317,7 @@ export function cardIndex(): Map<string, Card> {
     wording: 'both',
   });
   // "keys" roots are a subset of "all", so this covers every deck the builder can make.
-  return new Map([...everything, ...paperDeck()].map((c) => [c.id, c]));
+  return new Map(everything.map((c) => [c.id, c]));
 }
 
 export const DEFAULT_DECK: DeckConfig = {

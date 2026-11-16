@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft 7 (review after M3: fixes and plan changes recorded) |
+| **Status** | Draft 8 (paper deck preset removed) |
 | **Date** | 2026-11-15 |
 | **Owner** | Danny |
 
@@ -321,7 +321,7 @@ Each milestone ends with something usable on the phone.
 | Scale degree labels | Relative to the major scale (1 2 ♭3 4 5 ♭6 7), also used for chord formulas |
 | M1 on the phone | Explore gets a text scale browser (type, key, notes with degrees, signature, related keys) |
 | Card layer | `src/cards/` builds cards and runs sessions as pure TypeScript on top of the engine (no DOM, boundary-tested). Every card has a stable id for progress tracking (G-1) |
-| Paper deck | A one-tap preset that rebuilds the 14 paper cards exactly; tested as the M2 acceptance check |
+| Paper deck preset | Removed. The 14 cards recorded in the appendix were only a sample of the handwritten deck, and the deck builder covers all of it. Their spellings stay as known-good fixtures in the engine tests |
 | Grading gestures (F-2) | Swipe right = got it, left = missed it, only after flipping. Buttons too; on a keyboard, Space flips and the arrow keys grade |
 | Missed cards (F-3) | A missed card returns 4 cards later, or last if fewer remain, until it is got right. The summary counts cards right the first time |
 | Key filter (F-4) | Filters by key signature: all, flat keys, sharp keys (C is in neither), or picked. Minor scale types add the minor keys. Interval cards use the major tonics of the chosen signatures as roots |
@@ -358,4 +358,4 @@ Each milestone ends with something usable on the phone.
 - **White cards (9):** front is a major key name (B♭, C♯, F♯, A♭, G♭, C♭, E♭, B, D♭). Back is the number of sharps or flats, the scale spelled out, degree numbers 1–8, and for enharmonic keys the twin key with its own count (for example "7♯ / 5♭ (D♭ maj)" on the C♯ card).
 - **Green cards (5):** front is a note and "V" (E♭, A, G, E, C). Back is its fifth (B♭, E, D, B, G).
 
-These map to the **Key signature** and **Interval** card families in section 6.1 and are the acceptance check for M2: every paper card must have an exact digital equivalent.
+This is a sample of the handwritten deck, not all of it. The cards map to the **Key signature** and **Interval** card families in section 6.1. There is no paper-deck preset in the app (see section 13); the deck builder produces these cards and every other key. The sample remains a known-good check for the engine's spelling.

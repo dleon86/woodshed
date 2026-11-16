@@ -29,7 +29,7 @@ Music theory practice PWA (Android phone + iPad). [PRD.md](PRD.md) is the spec a
 ## Testing
 
 - Vitest. Engine tests sit next to the code as `src/theory/**/*.test.ts`; cross-cutting tests go in `tests/`.
-- Note spelling is the most important thing to test (PRD section 8). Test every key, not samples. The paper deck in the PRD appendix is a known-good fixture.
+- Note spelling is the most important thing to test (PRD section 8). Test every key, not samples. The handwritten cards in the PRD appendix are known-good fixtures for the engine tests.
 - Browser smoke tests are Playwright, in `e2e/`: a phone on Chromium and an iPad (portrait and landscape) on WebKit, run against the production build. They check flows, console errors and horizontal overflow, which unit tests cannot see. Add a check there for any layout bug found on a device.
 - Before committing, run `npm test` and `npm run build`; after UI changes also `npm run e2e` (needs the build; first time: `npx playwright install chromium webkit`). CI runs all three.
 

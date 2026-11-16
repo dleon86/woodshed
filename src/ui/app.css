@@ -721,31 +721,8 @@ button.secondary {
   margin: 0;
 }
 
-.builder-heading {
-  margin-top: 4px;
-  color: var(--muted);
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
 
-.preset {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: 14px var(--gutter);
-  border: 2px solid var(--accent);
-  border-radius: var(--radius);
-  background: var(--accent-soft);
-  text-align: left;
-  cursor: pointer;
-}
 
-.preset-title {
-  font-weight: 700;
-  font-size: 1.1rem;
-}
 
 .field {
   display: grid;
