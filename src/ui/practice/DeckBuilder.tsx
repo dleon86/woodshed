@@ -39,6 +39,20 @@ const DIRECTION_OPTIONS: ReadonlyArray<readonly [string, readonly Direction[]]> 
   ['Both', ['up', 'down']],
 ];
 
+const ROOT_OPTIONS = [
+  ['natural', 'Natural'],
+  ['common', 'Common'],
+  ['all', 'All'],
+  ['keys', 'From keys'],
+] as const;
+
+const ROOT_HINT = {
+  natural: 'Starts from C D E F G A B.',
+  common: 'Starts from the naturals plus C♯ D♯ F♯ G♯ A♯ and D♭ E♭ G♭ A♭ B♭.',
+  all: 'Also starts from E♯ B♯ C♭ F♭, which need double sharps and flats.',
+  keys: 'Starts from the major key names chosen under “Which keys”.',
+} as const;
+
 const WORDINGS = [
   ['names', 'Names'],
   ['numerals', 'Numerals'],
@@ -136,6 +150,8 @@ export function DeckBuilder() {
               </Chip>
             ))}
           </div>
+          <Segmented label="Starting notes" options={ROOT_OPTIONS} value={config.roots} onChange={(roots) => updateDeck({ roots })} />
+          <p class="muted small">{ROOT_HINT[config.roots]}</p>
           <Segmented
             label="Direction"
             options={DIRECTION_OPTIONS.map(([name]) => [name, name] as const)}

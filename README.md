@@ -17,7 +17,7 @@ After the first load it runs without a network connection.
 
 ## Develop
 
-Requires Node.js 20.11 or newer (Node 22 LTS recommended).
+Requires Node.js 22.12 or newer (Node 24 LTS recommended).
 
 ```bash
 npm install
@@ -29,6 +29,7 @@ npm run dev          # dev server at http://localhost:5173/woodshed/
 | `npm run dev` | Dev server with hot reload |
 | `npm run dev:lan` | Dev server reachable from other devices on your Wi-Fi |
 | `npm test` | Run the test suite once (Vitest) |
+| `npm run e2e` | Browser smoke tests (Playwright) against the last build |
 | `npm run test:watch` | Run tests on every change |
 | `npm run typecheck` | Type-check all TypeScript projects |
 | `npm run build` | Type-check and build the static site into `dist/` |

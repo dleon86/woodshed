@@ -1,0 +1,11 @@
+{
+  // Browser tests: Node code that also passes functions into the page, so it needs DOM types.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "outDir": "node_modules/.tmp/e2e",
+    "tsBuildInfoFile": "node_modules/.tmp/e2e.tsbuildinfo"
+  },
+  "include": ["playwright.config.ts", "e2e/**/*.ts"]
+}

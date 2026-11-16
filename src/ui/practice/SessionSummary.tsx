@@ -1,5 +1,5 @@
 import { type Session, summarize } from '../../cards';
-import { endSession, restart, start } from '../../state/practice';
+import { endSession, restart, startMissed } from '../../state/practice';
 
 function duration(ms: number): string {
   const s = Math.round(ms / 1000);
@@ -41,7 +41,7 @@ export function SessionSummary({ session }: { session: Session }) {
 
       <div class="summary-actions">
         {sum.missed.length > 0 && (
-          <button type="button" class="primary" onClick={() => start(sum.missed, 0)}>
+          <button type="button" class="primary" onClick={() => startMissed(sum.missed)}>
             Practice {sum.missed.length} missed card{sum.missed.length === 1 ? '' : 's'}
           </button>
         )}

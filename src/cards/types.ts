@@ -69,6 +69,15 @@ export interface Show {
 export type KeyFilter = 'all' | 'flats' | 'sharps' | 'custom';
 export type IntervalWording = 'names' | 'numerals' | 'both';
 
+/**
+ * Which notes interval cards start from (PRD 5.3 "from every root"):
+ * natural = the 7 naturals; common = those plus C♯ D♯ F♯ G♯ A♯ and
+ * D♭ E♭ G♭ A♭ B♭ (17); all = every natural, sharp and flat (21, adds
+ * E♯ B♯ C♭ F♭); keys = the major tonics of the chosen key signatures.
+ */
+export const ROOT_SETS = ['natural', 'common', 'all', 'keys'] as const;
+export type RootSet = (typeof ROOT_SETS)[number];
+
 /** F-4: decks are built by filter. */
 export interface DeckConfig {
   readonly families: readonly Family[];
@@ -79,6 +88,7 @@ export interface DeckConfig {
   /** Interval ids, "m2" … "P8". */
   readonly intervals: readonly string[];
   readonly directions: readonly Direction[];
+  readonly roots: RootSet;
   /** "Perfect 5th above E♭", "E♭ V", or both. Numerals only exist for ascending perfect and major intervals. */
   readonly wording: IntervalWording;
 }

@@ -50,6 +50,7 @@ describe('placement', () => {
       scaleTypes: ['major', 'natural-minor', 'harmonic-minor', 'melodic-minor'],
       intervals: [...V1_INTERVALS],
       directions: ['up', 'down'],
+      roots: 'all',
     });
     for (const id of INSTRUMENT_IDS) {
       const profile = PROFILES[id];

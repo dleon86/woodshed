@@ -30,12 +30,13 @@ Music theory practice PWA (Android phone + iPad). [PRD.md](PRD.md) is the spec a
 
 - Vitest. Engine tests sit next to the code as `src/theory/**/*.test.ts`; cross-cutting tests go in `tests/`.
 - Note spelling is the most important thing to test (PRD section 8). Test every key, not samples. The paper deck in the PRD appendix is a known-good fixture.
-- Before committing, run `npm test` and `npm run build`. CI runs both.
+- Browser smoke tests are Playwright, in `e2e/`: a phone on Chromium and an iPad (portrait and landscape) on WebKit, run against the production build. They check flows, console errors and horizontal overflow, which unit tests cannot see. Add a check there for any layout bug found on a device.
+- Before committing, run `npm test` and `npm run build`; after UI changes also `npm run e2e` (needs the build; first time: `npx playwright install chromium webkit`). CI runs all three.
 
 ## Build and deploy
 
-- Vite 6 (it supports Node 20.11; Vite 7+ needs Node 20.19+). Base path defaults to `/woodshed/`; CI sets `BASE_PATH` from the repo name.
+- Node 24 locally and in CI (`nvm use 24`). Vite 6 for now; the old Node 20.11 limit that pinned it is gone, so Vite 7 is an ordinary upgrade when wanted. Base path defaults to `/woodshed/`; CI sets `BASE_PATH` from the repo name.
 - `vite-plugin-pwa` generates the manifest, the Workbox service worker (precaches everything) and all icons from `public/icon.svg` at build time. Don't commit generated PNGs.
+- The service worker uses `registerType: 'prompt'`: `src/main.tsx` applies a new version (and reloads) only when no drill is in progress. Running sessions are saved to `localStorage` as card ids and restored on load.
 - The service worker only exists in production builds: test offline and install with `npm run build && npm run preview`.
 - Push to `main` deploys to GitHub Pages via `.github/workflows/deploy.yml`.
-- npm 10.2 (bundled with Node 20.11) crashes resolving some peer sets (`reading 'edgesOut'`). If that happens, use `npx npm@10.9.4 install`, or upgrade Node.

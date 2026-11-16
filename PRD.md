@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft 6 (M3 decisions recorded) |
+| **Status** | Draft 7 (review after M3: fixes and plan changes recorded) |
 | **Date** | 2026-11-15 |
 | **Owner** | Danny |
 
@@ -86,7 +86,7 @@ For each scale the app knows: notes in order, scale degrees 1–8, key signature
 
 ### 5.3 Intervals
 
-- v1: every simple interval from minor 2nd to perfect octave, including the tritone as both augmented 4th and diminished 5th, ascending and descending, from every root.
+- v1: every simple interval from minor 2nd to perfect octave, including the tritone as both augmented 4th and diminished 5th, ascending and descending, from every root. The deck builder offers four sets of starting notes: the 7 naturals; the 17 common notes (naturals plus C♯ D♯ F♯ G♯ A♯ and D♭ E♭ G♭ A♭ B♭, the default); all 21 naturals, sharps and flats (adds E♯ B♯ C♭ F♭); or the major key names of the chosen key signatures.
 - Later: compound intervals (9ths, 10ths, 11ths, 13ths).
 - Scale-degree form is supported as well as interval form: "the V of E♭" and "a perfect 5th above E♭" are the same card family.
 
@@ -136,6 +136,14 @@ Same card families, but the answer is entered rather than self-graded.
 - **Q-3 Mic entry:** play the answer (see 6.5).
 - **Q-4** Immediate feedback: correct notes turn green, wrong notes red, and the correct answer is shown and played.
 - **Q-5** Enharmonic equivalents are accepted as correct. When the answer given is spelled differently from the expected one (F where the key calls for E♯), it is marked correct with a note showing the expected spelling and why. This applies to tap entry and mic entry alike.
+  - The note names the expected letter and gives the rule behind it. The rule depends on the card family:
+    - **Scale** ("3rd of C♯ major", answered F): "Correct. Written E♯ here: a scale uses each letter once, and the 3rd above C is an E."
+    - **Interval** ("Major 3rd above G♯", answered C): "Correct. Written B♯: a 3rd above G is always some kind of B. G♯ to C would be a 4th."
+    - **Raised degree** ("7th of G♯ harmonic minor", answered G): "Correct. Written F𝄪: the 7th above G is an F, raised twice."
+    - **Chord** ("7th of C°7", answered A): "Correct. Written B𝄫: chords stack in thirds, so the 7th above C is a B."
+  - An answer already spelled as expected gets no note.
+  - The mic hears pitch, not spelling, so a mic answer is always shown with the expected spelling and no note.
+  - On the keyboard and fretboard a tap is also pitch only, so it is treated like the mic. The note appears where the spelling is chosen: the note-name picker and the staff.
 - **Q-6** Optional timer and session length (10 cards, 5 minutes, or endless).
 - **Q-7** End-of-session summary: score, time, and the cards missed.
 
@@ -155,10 +163,11 @@ Three interchangeable views, used both to display answers and to enter them.
 - **A-1** Play any note, interval (melodic up, melodic down, harmonic), scale (up, down, both) or chord (block, arpeggio).
 - **A-2** Playback is at sounding pitch for the active profile and inside its range.
 - **A-3** Tempo control for scales and arpeggios.
-- **A-4** One synthesized piano-like tone in v1. Per-instrument sounds are a later upgrade.
+- **A-4** One synthesized piano-like tone in v1. Per-instrument sounds are a later upgrade. The rest of the app plays sound through one small interface (play these pitches, at these times), so sampled or per-instrument sounds can replace the synth without touching cards, views or quizzes.
 - **A-5** Optional drone on the root, for intonation practice.
 - **A-6** Reference pitch adjustable (default A = 440 Hz).
 - **A-7** Audio starts only after a tap, as mobile browsers require.
+- **A-8** Sound plays even when an iPad or iPhone is in silent mode. Web audio is muted by the silent switch unless the page asks for playback audio (`navigator.audioSession.type = 'playback'`, Safari 16.4 and later). Checked on the real iPad in M4.
 
 ### 6.5 Pitch detection (mic input)
 
@@ -196,6 +205,9 @@ A free-play reference tool, separate from quizzes.
 ### 6.7 Progress
 
 - **G-1** Record every answer: card, right or wrong, time taken, input method, date.
+  - Two stores, both keyed by the stable card id. An **answer log** (one row per answer: card id, timestamp, correct, milliseconds taken, input method: self-graded, tap, multiple choice or mic). And a **card state** (one row per card: times seen, times correct, current streak, last seen, plus the spaced-repetition fields: due date, interval in days, ease).
+  - The spaced-repetition fields are written from the first recorded answer but not used for scheduling in v1. Spaced repetition (section 10) can then be switched on without migrating data.
+  - Time taken is what makes the "under 3 seconds" success measure checkable.
 - **G-2** A mastery level per card, shown as a heat map by key (and on a circle of fifths in v1.1).
 - **G-3** A "weak spots" deck built from the cards with the lowest mastery.
 - **G-4** Practice streak and time practiced per day.
@@ -226,7 +238,7 @@ Confirmed at M0 unless marked otherwise.
 - **Structure:** a theory engine with no user-interface code, covered by automated tests, with the views, audio and mic layers built on top of it. Correct note spelling is the part most worth testing heavily.
 - **Language and tooling:** TypeScript (strict). Build tool **Vite**. UI framework **Preact** with **Preact Signals** for shared state (about 4 KB, plain TSX, so the engine and UI share one language and toolchain). Tests with **Vitest**. Hash-based routing so GitHub Pages needs no server rewrites. The theory engine is its own TypeScript project with no DOM types, and a test fails if it imports anything outside `src/theory/`.
 - **Rendering:** the keyboard, fretboard and staff drawn as SVG so they scale cleanly between phone and tablet.
-- **Audio:** the browser's Web Audio API.
+- **Audio:** the browser's Web Audio API, behind a small playback interface (A-4), with the playback audio session requested for iOS silent mode (A-8).
 - **Pitch detection:** the browser's microphone API with an autocorrelation-family algorithm (YIN or McLeod), with the browser's echo cancellation, noise suppression and automatic gain turned off because they distort instrument sound. The analysis window must be long enough for bass low E.
 - **Hosting:** needs HTTPS, because browsers only allow microphone access on secure sites. The repository is **public** and the app is hosted on GitHub Pages.
 - **Existing libraries:** evaluate established open-source libraries for theory, notation and pitch detection before writing each from scratch.
@@ -244,13 +256,14 @@ Each milestone ends with something usable on the phone.
 | M1 | Theory engine | Scales, intervals and chords generated with correct spelling for all keys; automated tests pass |
 | M2 | Flash cards | Deck builder, flip cards for scale, key signature and interval families; text-only answers. Replaces the paper deck |
 | M3 | Views | Keyboard, fretboard and staff display answers; pinned staff; keyboard, guitar and bass profiles |
-| M4 | Audio | Notes, intervals, scales and chords play back |
-| M5 | Quiz modes | Tap entry on all three views, multiple choice, feedback, session summary, progress recording |
+| M4 | Audio | Notes, intervals, scales and chords play back. Also a rough mic check: a bare tuner readout (note and cents) on both real devices, to find permission problems and playback/mic conflicts early. It is a test page, not the M7 tuner |
+| M5a | Quiz modes | Tap entry on the note-name picker and the keyboard, multiple choice, feedback, session summary, progress recording (G-1) |
+| M5b | Quiz entry on fretboard and staff | Tap entry on the fretboard and the staff, including choosing an accidental on the staff |
 | M6 | Chord tool | Name → notes, notes → name, chords in a key, chord card families |
 | M7 | Mic input | Tuner readout, play-the-answer, scale run, chord arpeggio |
 | M8 | Progress and polish | Heat map, weak-spots deck, export/import, offline check |
 
-**v1 is M0–M8.**
+**v1 is M0–M8.** M5 is split in two because it was the largest milestone; each half ends with something usable.
 
 ## 10. After v1
 
@@ -282,7 +295,7 @@ Each milestone ends with something usable on the phone.
 |---|---|
 | Low bass notes are hard to detect accurately on a phone mic | Longer analysis window for the bass profile; test early in M7 with the real instrument; allow octave-agnostic matching |
 | Guitar and bass overtones cause octave errors | Octave-agnostic matching by default; tune the algorithm against recordings of each instrument |
-| Mobile browsers handle mic permission and audio start-up differently, especially for installed apps on iPad | Test on both real devices at M0 (audio) and at the start of M7 (mic), not at the end |
+| Mobile browsers handle mic permission and audio start-up differently, especially for installed apps on iPad | Test on both real devices at M0, and in M4 for both audio and a rough mic check: playing and listening share one audio system on iOS (P-8), so conflicts are found before quizzes depend on either |
 | On-device storage is cleared by the browser | Export/import in v1; sync later |
 | Scope creep from a long wish list | Milestones each ship something usable; everything in section 10 waits until v1 is done |
 | Incorrect note spelling undermines trust in the cards | Theory engine is rule-based and heavily tested; the paper cards serve as a known-good check |
@@ -324,12 +337,21 @@ Each milestone ends with something usable on the phone.
 | Fretboard display (V-2) | Shows every position of every answer note across the whole neck; highest string on top; equal fret spacing for readability. One chosen position or voicing comes with the chord tool (C-2) |
 | Keyboard display (V-1) | Whole octaves around the answer, at least two, scrolling sideways when wider than the screen |
 | Labels (V-5) | Note names, scale degrees (relative to major), intervals from the root (R, m3, P5), or off; a quick toggle above every view |
+| Saved sessions | A drill in progress is saved (as card ids) and restored after a reload, an update, or the browser closing the tab. Cards are rebuilt from the engine on restore, so stored data never goes stale |
+| App updates | A new version downloads in the background and is applied only when no drill is in progress, never mid-card |
+| Interval starting notes | Four sets (naturals, 17 common, all 21, from keys); common is the default. Before this, interval cards could never start on G♯, D♯ or A♯ |
+| "Same deck again" | Always restarts the deck chosen in the builder, also after a missed-cards round |
+| Node version | Node 24 LTS locally and in CI (Node 20 reached end of life in April 2026) |
+| Browser tests | Playwright smoke tests in CI: phone on Chromium, iPad portrait and landscape on WebKit. They check flows, console errors and horizontal overflow |
+| Mic check moved earlier | A rough tuner readout is part of M4 (see section 9) |
+| M5 split | M5a (picker, keyboard, multiple choice, progress) and M5b (fretboard and staff entry) |
+| Progress data shape | Answer log plus per-card state with spaced-repetition fields from the start (G-1) |
 | View switcher (V-4) | Removed after trying M3 on the iPad: the instrument already implies the view, and a separate switcher allowed combinations that made no sense (a keyboard on frets). The staff is reached with Pin staff. Seeing guitar answers on a piano could return as a setting if missed |
 | Grand staff split | Written middle C and above on the treble staff, below on the bass staff |
 
 ### Open
 
-1. **Existing apps:** no survey has been done yet of apps that already cover some of these features. Worth a quick look before M2 for ideas to borrow and gaps to fill.
+1. **Existing apps:** no survey has been done of apps that already cover some of these features. It was meant for before M2 and did not happen. The flash cards did not need it. Quiz design (M5a) is where borrowed ideas would help most, so: a quick look before M5a, or drop the question then.
 
 ## Appendix: the original paper deck
 

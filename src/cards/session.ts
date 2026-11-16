@@ -77,3 +77,44 @@ export function summarize(session: Session, now: number = Date.now()): Summary {
   }
   return { total: session.total, firstTry, missed, durationMs: now - session.startedAt };
 }
+
+/* ---------- Saving and restoring ---------- */
+
+/** A session as plain ids, safe to keep in storage across app versions. */
+export interface StoredSession {
+  readonly queue: readonly string[];
+  readonly log: readonly { readonly id: string; readonly got: boolean }[];
+  readonly total: number;
+  readonly startedAt: number;
+}
+
+export function storeSession(session: Session): StoredSession {
+  return {
+    queue: session.queue.map((c) => c.id),
+    log: session.log.map((l) => ({ id: l.card.id, got: l.got })),
+    total: session.total,
+    startedAt: session.startedAt,
+  };
+}
+
+/**
+ * Rebuild a session from stored ids. Cards are looked up fresh, so a session
+ * saved by an older version shows current card content. Ids that no longer
+ * exist are dropped; anything malformed gives undefined.
+ */
+export function restoreSession(stored: unknown, lookup: (id: string) => Card | undefined): Session | undefined {
+  if (typeof stored !== 'object' || stored === null) return undefined;
+  const v = stored as Partial<Record<keyof StoredSession, unknown>>;
+  if (!Array.isArray(v.queue) || !Array.isArray(v.log)) return undefined;
+  if (typeof v.total !== 'number' || typeof v.startedAt !== 'number') return undefined;
+  const queue = v.queue.flatMap((id) => (typeof id === 'string' ? (lookup(id) ?? []) : []));
+  const log = v.log.flatMap((entry: unknown) => {
+    const e = entry as { id?: unknown; got?: unknown } | null;
+    const card = e && typeof e.id === 'string' ? lookup(e.id) : undefined;
+    return card && typeof e?.got === 'boolean' ? [{ card, got: e.got }] : [];
+  });
+  if (queue.length === 0 && log.length === 0) return undefined;
+  // If cards were dropped, the count of distinct cards shrinks with them.
+  const distinct = new Set([...queue, ...log.map((l) => l.card)].map((c) => c.id)).size;
+  return { queue, log, total: Math.min(v.total, distinct), startedAt: v.startedAt };
+}

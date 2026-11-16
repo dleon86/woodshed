@@ -37,7 +37,7 @@ import {
   signatureName,
   transpose,
 } from '../theory';
-import type { Card, DeckConfig, Family, LabelledNote, Show } from './types';
+import { type Card, type DeckConfig, FAMILIES, type Family, type LabelledNote, type Show } from './types';
 
 /** PRD 5.3 v1: minor 2nd to perfect octave, tritone as both A4 and d5. */
 export const V1_INTERVALS = ['m2', 'M2', 'm3', 'M3', 'P4', 'A4', 'd5', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8'] as const;
@@ -55,6 +55,24 @@ export function selectedFifths(config: DeckConfig): number[] {
       return ALL_FIFTHS.filter((f) => f > 0);
     case 'custom':
       return ALL_FIFTHS.filter((f) => config.customKeys.includes(f));
+  }
+}
+
+const NATURAL_ROOTS = 'C D E F G A B'.split(' ').map(parseNote);
+const COMMON_ROOTS = 'C C# Db D D# Eb E F F# Gb G G# Ab A A# Bb B'.split(' ').map(parseNote);
+const ALL_ROOTS = 'C C# Cb D D# Db E E# Eb F F# Fb G G# Gb A A# Ab B B# Bb'.split(' ').map(parseNote);
+
+/** The notes interval cards start from. */
+export function intervalRoots(config: DeckConfig): Note[] {
+  switch (config.roots) {
+    case 'natural':
+      return NATURAL_ROOTS;
+    case 'common':
+      return COMMON_ROOTS;
+    case 'all':
+      return ALL_ROOTS;
+    case 'keys':
+      return selectedFifths(config).map((f) => majorKeyFor(f).tonic);
   }
 }
 
@@ -265,8 +283,7 @@ export function buildDeck(config: DeckConfig): Card[] {
     }
   }
 
-  // Interval roots are the major tonics of the chosen signatures ("flat keys only" → flat roots).
-  const roots = fifths.map((f) => majorKeyFor(f).tonic);
+  const roots = intervalRoots(config);
   const intervals = V1_INTERVALS.filter((id) => config.intervals.includes(id)).map(parseInterval);
   for (const root of roots) {
     for (const iv of intervals) {
@@ -299,6 +316,22 @@ export function paperDeck(): Card[] {
   return [...white, ...green];
 }
 
+/** Every card the app can build, by id: used to restore a saved session from ids alone. */
+export function cardIndex(): Map<string, Card> {
+  const everything = buildDeck({
+    families: FAMILIES,
+    keys: 'all',
+    customKeys: [],
+    scaleTypes: SCALE_TYPES,
+    intervals: V1_INTERVALS,
+    directions: ['up', 'down'],
+    roots: 'all',
+    wording: 'both',
+  });
+  // "keys" roots are a subset of "all", so this covers every deck the builder can make.
+  return new Map([...everything, ...paperDeck()].map((c) => [c.id, c]));
+}
+
 export const DEFAULT_DECK: DeckConfig = {
   families: ['key-signature'],
   keys: 'all',
@@ -306,5 +339,6 @@ export const DEFAULT_DECK: DeckConfig = {
   scaleTypes: ['major'],
   intervals: [...V1_INTERVALS],
   directions: ['up'],
+  roots: 'common',
   wording: 'names',
 };

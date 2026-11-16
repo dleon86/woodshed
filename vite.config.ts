@@ -12,7 +12,8 @@ export default defineConfig({
   plugins: [
     preact(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt': the new version waits until src/main.tsx applies it, so a reload never lands mid-drill.
+      registerType: 'prompt',
       injectRegister: false, // registered from src/main.tsx
       pwaAssets: { config: true }, // icons from pwa-assets.config.ts
       manifest: {

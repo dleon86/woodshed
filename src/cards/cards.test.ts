@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_DECK, V1_INTERVALS, buildDeck, paperDeck, selectedFifths } from './generate';
-import { answer, isDone, retryIndex, startSession, summarize } from './session';
+import { DEFAULT_DECK, V1_INTERVALS, buildDeck, cardIndex, paperDeck, selectedFifths } from './generate';
+import { answer, isDone, restoreSession, retryIndex, startSession, storeSession, summarize } from './session';
 import { type Card, type DeckConfig, FAMILIES } from './types';
 
 const EVERYTHING: DeckConfig = {
@@ -10,6 +10,7 @@ const EVERYTHING: DeckConfig = {
   scaleTypes: ['major', 'natural-minor', 'harmonic-minor', 'melodic-minor'],
   intervals: [...V1_INTERVALS],
   directions: ['up', 'down'],
+  roots: 'all',
   wording: 'both',
 };
 
@@ -61,10 +62,26 @@ describe('deck building (F-4)', () => {
     expect(deck({ families: ['reverse-key-signature'] })).toHaveLength(15);
     expect(deck({ families: ['scale-spelling'], scaleTypes: ['major', 'natural-minor'] })).toHaveLength(30);
     expect(deck({ families: ['scale-degree'] })).toHaveLength(15 * 6);
-    expect(deck({ families: ['interval'] })).toHaveLength(15 * 13);
-    expect(deck({ families: ['interval'], directions: ['up', 'down'] })).toHaveLength(15 * 13 * 2);
+    expect(deck({ families: ['interval'] })).toHaveLength(17 * 13);
+    expect(deck({ families: ['interval'], directions: ['up', 'down'] })).toHaveLength(17 * 13 * 2);
     // Numerals exist for M2 M3 P4 P5 M6 M7 ascending: six extra cards per root with "both".
-    expect(deck({ families: ['interval'], wording: 'both' })).toHaveLength(15 * (13 + 6));
+    expect(deck({ families: ['interval'], wording: 'both' })).toHaveLength(17 * (13 + 6));
+  });
+
+  it('starts interval cards from every root (PRD 5.3), not only key names', () => {
+    const fronts = (roots: DeckConfig['roots'], extra: Partial<DeckConfig> = {}) =>
+      deck({ families: ['interval'], intervals: ['M3'], roots, ...extra }).map((c) => `${c.front} → ${c.answer}`);
+    expect(fronts('natural')).toHaveLength(7);
+    expect(fronts('common')).toHaveLength(17);
+    expect(fronts('all')).toHaveLength(21);
+    // G♯, D♯ and A♯ are not major key names but are everyday roots (the 3rd of an E chord).
+    expect(fronts('common')).toContain('Major 3rd above G♯ → B♯');
+    expect(fronts('common')).toContain('Major 3rd above D♯ → F𝄪');
+    expect(fronts('common')).not.toContain('Major 3rd above B♯ → D𝄪');
+    expect(fronts('all')).toContain('Major 3rd above B♯ → D𝄪');
+    // "From keys" follows the key filter, as before.
+    expect(fronts('keys', { keys: 'flats' })).toHaveLength(7);
+    expect(fronts('keys', { keys: 'flats' })).toContain('Major 3rd above A♭ → C');
   });
 
   it('only builds parallel keys that have a standard signature', () => {
@@ -77,7 +94,7 @@ describe('deck building (F-4)', () => {
   it('gives every card a unique, stable id', () => {
     const all = buildDeck(EVERYTHING);
     expect(new Set(all.map((c) => c.id)).size).toBe(all.length);
-    expect(deck({ families: ['interval'] })[0]!.id).toBe('interval:Cb:m2:up');
+    expect(deck({ families: ['interval'] })[0]!.id).toBe('interval:C:m2:up');
   });
 
   it('writes every card with real accidental symbols, never # or b', () => {
@@ -160,5 +177,31 @@ describe('sessions (F-1 to F-3)', () => {
     expect(sum.firstTry).toBe(2);
     expect(sum.missed.map((c) => c.id)).toEqual([cards[0]!.id]);
     expect(sum.durationMs).toBe(65_000);
+  });
+
+  it('survives a round trip through storage as ids', () => {
+    const index = cardIndex();
+    let s = startSession(paperDeck(), { random: fixedOrder, now: 1000 });
+    s = answer(s, false);
+    s = answer(s, true);
+    const restored = restoreSession(JSON.parse(JSON.stringify(storeSession(s))), (id) => index.get(id));
+    expect(restored).toEqual(s);
+  });
+
+  it('drops unknown ids and rejects malformed data when restoring', () => {
+    const index = cardIndex();
+    const lookup = (id: string) => index.get(id);
+    const stored = { queue: ['keysig:C-major', 'gone:card'], log: [{ id: 'gone:card', got: true }], total: 2, startedAt: 5 };
+    expect(restoreSession(stored, lookup)?.queue.map((c) => c.id)).toEqual(['keysig:C-major']);
+    expect(restoreSession(stored, lookup)?.log).toEqual([]);
+    for (const bad of [null, 'x', {}, { queue: [], log: [], total: 0, startedAt: 0 }, { queue: 'a', log: [], total: 1, startedAt: 1 }]) {
+      expect(restoreSession(bad, lookup)).toBeUndefined();
+    }
+  });
+
+  it('can look up every card any deck can contain', () => {
+    const index = cardIndex();
+    const fromKeys = deck({ families: [...FAMILIES], keys: 'flats', roots: 'keys', wording: 'both', directions: ['up', 'down'] });
+    for (const card of [...fromKeys, ...paperDeck()]) expect(index.has(card.id), card.id).toBe(true);
   });
 });

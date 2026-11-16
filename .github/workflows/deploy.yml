@@ -20,12 +20,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
       - run: npm test
       - name: Build (base path from the repository name)
         run: npm run build
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/
+      - name: Install browsers for the smoke tests
+        run: npx playwright install --with-deps chromium webkit
+      - name: Browser smoke tests (phone on Chromium, iPad on WebKit)
+        run: npm run e2e
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
       - uses: actions/upload-pages-artifact@v3
