@@ -10,7 +10,8 @@ function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name);
     if (statSync(path).isDirectory()) return sourceFiles(path);
-    return /\.tsx?$/.test(name) ? [path] : [];
+    // Engine tests sit next to the code and import vitest; only shipped code is checked.
+    return /\.tsx?$/.test(name) && !/\.test\.ts$/.test(name) ? [path] : [];
   });
 }
 

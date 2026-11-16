@@ -8,5 +8,7 @@
     "outDir": "node_modules/.tmp/theory",
     "tsBuildInfoFile": "node_modules/.tmp/theory.tsbuildinfo"
   },
-  "include": ["src/theory/**/*.ts"]
+  "include": ["src/theory/**/*.ts"],
+  // Tests import vitest; they are type-checked by tsconfig.node.json instead.
+  "exclude": ["src/theory/**/*.test.ts"]
 }

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft 3 (M0 decisions recorded) |
+| **Status** | Draft 4 (M1 decisions recorded) |
 | **Date** | 2026-11-15 |
 | **Owner** | Danny |
 
@@ -230,6 +230,7 @@ Confirmed at M0 unless marked otherwise.
 - **Pitch detection:** the browser's microphone API with an autocorrelation-family algorithm (YIN or McLeod), with the browser's echo cancellation, noise suppression and automatic gain turned off because they distort instrument sound. The analysis window must be long enough for bass low E.
 - **Hosting:** needs HTTPS, because browsers only allow microphone access on secure sites. The repository is **public** and the app is hosted on GitHub Pages.
 - **Existing libraries:** evaluate established open-source libraries for theory, notation and pitch detection before writing each from scratch.
+- **Theory engine (M1):** written in-house rather than using Tonal.js. Spelling reduces to letter + accidental arithmetic (about 650 lines), the engine stays dependency-free inside its architecture boundary, and every spelling rule is ours to test. Notation and pitch detection are still to be evaluated at M3 and M7.
 
 ## 9. Milestones
 
@@ -299,6 +300,11 @@ Each milestone ends with something usable on the phone.
 | License | MIT |
 | UI framework and tooling | Preact + Signals, Vite, Vitest, vite-plugin-pwa (see section 8) |
 | Hosting path | GitHub Pages at `/woodshed/` (repository `woodshed`) |
+| Theory library | In-house engine, no dependency (see section 8) |
+| Roman numeral interval cards | A bare numeral on a note means the degree of the major scale built on it: "E♭ V" = B♭, "C VI" = A |
+| Melodic minor | Classical form: raised 6 and 7 ascending, natural minor descending. The engine keeps both forms |
+| Scale degree labels | Relative to the major scale (1 2 ♭3 4 5 ♭6 7), also used for chord formulas |
+| M1 on the phone | Explore gets a text scale browser (type, key, notes with degrees, signature, related keys) |
 
 ### Open
 

@@ -318,6 +318,134 @@ select {
   color: var(--text);
 }
 
+/* Explore: scale browser */
+.explore {
+  display: grid;
+  gap: var(--gutter);
+}
+
+.explore h1 {
+  margin: 0;
+}
+
+.tonic-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.tonic-grid button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 4px 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.tonic-grid button[aria-checked='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.tonic-name {
+  font-family: var(--font-music);
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.tonic-count {
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+.scale-card {
+  padding: var(--gutter);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.scale-title {
+  font-family: var(--font-music);
+  font-size: 1.6rem;
+}
+
+.degree-block {
+  margin-top: 12px;
+}
+
+.degree-caption {
+  margin-bottom: 4px;
+}
+
+.degree-row {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: center;
+}
+
+.degree-row li {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
+  border-left: 1px solid var(--border);
+}
+
+.degree-row li:first-child {
+  border-left: 0;
+}
+
+.degree-note {
+  font-family: var(--font-music);
+  font-size: clamp(1.1rem, 5vw, 1.5rem);
+  font-weight: 700;
+}
+
+.degree-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.related {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0 16px;
+  margin: 16px 0 0;
+}
+
+.related dt {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.related dd {
+  margin: 0;
+}
+
+button.link {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 /* ---------- Tablet / desktop landscape ---------- */
 
 @media (min-width: 900px) and (orientation: landscape), (min-width: 1100px) {
