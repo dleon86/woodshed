@@ -8,6 +8,8 @@ const port = 4173;
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: true,
+  // WebKit on Windows is slow when every worker is busy; the longest test flips 16 cards.
+  timeout: 60_000,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['github'], ['list']] : 'list',

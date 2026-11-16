@@ -132,3 +132,25 @@ test('interval decks can start from G♯ (not only major key names)', async ({ p
   await expect(page.getByRole('button', { name: /^Start/ })).toContainText('of 221 cards'); // 17 roots × 13 intervals
   await expectNoOverflow(page);
 });
+
+test('layout holds with wider text (other system fonts, large text settings)', async ({ page }) => {
+  await open(page);
+  // Stand-in for a wider font: Linux and some Android fonts run wider than the ones we develop on.
+  const widen = () => page.addStyleTag({ content: ':root { letter-spacing: 0.06em; }' });
+  await widen();
+  for (const section of ['Practice', 'Explore', 'Progress', 'Settings']) {
+    await page.getByRole('link', { name: section }).click();
+    await expectNoOverflow(page);
+  }
+  // The busiest screens: the builder with every option showing, a flipped card, and a fretboard.
+  await page.getByRole('link', { name: 'Practice' }).click();
+  for (const family of [/^Scale spelling/, /^Interval naming/]) await page.getByRole('button', { name: family }).click();
+  await page.getByRole('radio', { name: 'Pick' }).click();
+  await expectNoOverflow(page);
+  await page.getByLabel('Instrument').selectOption('guitar');
+  await page.getByRole('button', { name: /Paper deck/ }).click();
+  await flip(page);
+  await expectNoOverflow(page);
+  await page.getByRole('button', { name: 'Pin staff' }).click();
+  await expectNoOverflow(page);
+});
