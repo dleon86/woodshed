@@ -227,8 +227,9 @@ test('Play sounds the answer at the right pitches, and Stop ends it', async ({ p
 
   await page.getByRole('button', { name: '▶ Play' }).click();
   await expect(page.getByRole('button', { name: '■ Stop' })).toBeVisible();
+  // Audio starts a moment after the tap (the context has to start first), so wait for the notes.
+  await expect.poll(async () => fundamentals(await started()).length).toBe(8);
   const keyboard = fundamentals(await started());
-  expect(keyboard).toHaveLength(8);
   for (const hz of [261.63, 293.66, 329.63, 349.23, 392.0, 440.0, 493.88, 523.25]) {
     expect(near(keyboard, hz), `keyboard plays ${hz} Hz`).toBe(true);
   }
@@ -240,6 +241,7 @@ test('Play sounds the answer at the right pitches, and Stop ends it', async ({ p
   const before = (await started()).length;
   await page.getByRole('button', { name: '▶ Play' }).click();
   await expect(page.getByRole('button', { name: '■ Stop' })).toBeVisible();
+  await expect.poll(async () => fundamentals((await started()).slice(before)).length).toBe(8);
   const guitar = fundamentals((await started()).slice(before));
   expect(near(guitar, 130.81), 'guitar starts on C3').toBe(true);
   expect(near(guitar, 523.25), 'guitar does not reach C5').toBe(false);
@@ -307,9 +309,10 @@ test('Play recovers after the audio is interrupted (iPad: leaving the tab or sle
   await page.getByRole('button', { name: '▶ Play' }).click();
   await expect(page.getByRole('button', { name: '■ Stop' })).toBeVisible();
   expect(await contexts(), 'a fresh audio context replaced the interrupted one').toBe(2);
-  expect((await started()).length, 'notes were scheduled again').toBeGreaterThan(before);
-  const running = await page.evaluate(() => (window as unknown as { __contexts: AudioContext[] }).__contexts[1]!.state);
-  expect(running).toBe('running');
+  await expect.poll(async () => (await started()).length, { message: 'notes were scheduled again' }).toBeGreaterThan(before);
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __contexts: AudioContext[] }).__contexts[1]!.state))
+    .toBe('running');
 });
 
 /* ---------- Quiz (M5a) ---------- */
@@ -506,10 +509,10 @@ test('sound is rebuilt after the app has been in the background (iPad sleep)', a
   await page.getByRole('button', { name: '▶ Play' }).click();
   await expect(page.getByRole('button', { name: '■ Stop' })).toBeVisible();
   expect(await count(), 'fresh audio was built for the first tap back').toBe(2);
-  const states = await page.evaluate(() =>
-    (window as unknown as { __contexts: AudioContext[] }).__contexts.map((c) => c.state),
-  );
-  expect(states).toEqual(['closed', 'running']);
+  // Closing the old audio and starting the new both finish a moment later.
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __contexts: AudioContext[] }).__contexts.map((c) => c.state)))
+    .toEqual(['closed', 'running']);
 });
 
 test('the Tone panel shapes touched notes and fits the screen', async ({ page }) => {
