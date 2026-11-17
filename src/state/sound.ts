@@ -1,7 +1,7 @@
 import { effect, signal } from '@preact/signals';
 import { type MicSession, type MicState, startMic } from '../audio/mic';
 import { type TunerReading, tunerReading } from '../audio/pitch';
-import { audioContext, play, startDrone, stop, stopDrone } from '../audio/player';
+import { audioContext, play, startDrone, stop, stopDrone, tapNote, tapNoteWhenReady } from '../audio/player';
 import {
   INTERVAL_PATTERNS,
   type IntervalPattern,
@@ -65,6 +65,23 @@ export function playShow(show: Show): void {
 export function stopPlaying(): void {
   stop();
   playing.value = false;
+}
+
+/* ---------- Notes from taps on the keyboard and fretboard (V-7) ---------- */
+
+const micBusy = () => micState.value === 'listening' || micState.value === 'asking';
+
+/**
+ * A finger went down on a key or fret: sound it, on top of anything already
+ * sounding. Returns false if audio is not running yet (the very first touch).
+ */
+export function tapDown(midiNumber: number): boolean {
+  return !micBusy() && tapNote(midiNumber, referencePitch.value);
+}
+
+/** The finger lifted from a note that could not sound on the way down: start audio and sound it now. */
+export function tapUp(midiNumber: number): void {
+  if (!micBusy()) void tapNoteWhenReady(midiNumber, referencePitch.value).catch(() => {});
 }
 
 /* ---------- Drone (A-5) ---------- */

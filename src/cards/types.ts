@@ -3,6 +3,7 @@
  * engine; the UI only renders them. Pure TypeScript, no DOM.
  */
 import type { Direction, Key, Note, ScaleType } from '../theory';
+import type { Quiz } from './quiz';
 
 /** The M2 card families (F-5). Chord families arrive with the chord tool in M6. */
 export const FAMILIES = [
@@ -49,6 +50,8 @@ export interface Card {
   readonly notes?: readonly LabelledNote[];
   /** What the instrument views draw for the answer (F-6). */
   readonly show: Show;
+  /** How the card is answered in quiz mode (PRD 6.2). */
+  readonly quiz: Quiz;
 }
 
 /**

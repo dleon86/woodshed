@@ -36,6 +36,7 @@ import {
   signatureName,
   transpose,
 } from '../theory';
+import type { Quiz } from './quiz';
 import { type Card, type DeckConfig, FAMILIES, type Family, type LabelledNote, type Show } from './types';
 
 /** PRD 5.3 v1: minor 2nd to perfect octave, tritone as both A4 and d5. */
@@ -109,6 +110,22 @@ function intervalShow(from: Note, to: Note, direction: Direction): Show {
   return { kind: 'interval', notes, root: notes[0]!, ...(direction === 'down' ? { descending: true } : {}) };
 }
 
+/* ---------- Quiz answers (PRD 6.2) ---------- */
+
+const range15 = Array.from({ length: 15 }, (_, i) => i - 7);
+/** Answer pools for multiple choice, each in circle-of-fifths or size order so neighbours make fair distractors. */
+const COUNT_POOL = range15.map((f) => signatureCount(keySignature(majorKeyFor(f))));
+const SIGNATURE_POOL = range15.map((f) => `${keyName(majorKeyFor(f))} / ${keyName(minorKeyFor(f))}`);
+const KEY_POOL = { major: range15.map((f) => keyName(majorKeyFor(f))), minor: range15.map((f) => keyName(minorKeyFor(f))) };
+const INTERVAL_POOL = V1_INTERVALS.map((id) => intervalName(parseInterval(id)));
+
+const choice = (correct: string, pool: readonly string[]): Quiz => ({ kind: 'choice', correct, pool });
+
+/** One note, reached by counting `number` letters from `from`. */
+function oneNote(expected: Note, number: number, direction: Direction, from: Note, inScale: boolean): Quiz {
+  return { kind: 'notes', expected: [expected], spelling: [{ number, direction, from: from.letter, scale: inScale }] };
+}
+
 /* ---------- Card builders ---------- */
 
 export function keySignatureCard(k: Key): Card {
@@ -124,6 +141,7 @@ export function keySignatureCard(k: Key): Card {
     details: [sig.accidentals.length ? names(sig.accidentals) : 'No sharps or flats', ...(twin ? [twin] : [])],
     notes: scaleNotes(s),
     show: scaleShow(s),
+    quiz: choice(signatureCount(sig), COUNT_POOL),
   };
 }
 
@@ -137,6 +155,7 @@ export function reverseKeySignatureCard(fifths: number): Card {
     answer: `${keyName(majorKeyFor(fifths))} / ${keyName(minorKeyFor(fifths))}`,
     details: sig.accidentals.length ? [names(sig.accidentals)] : [],
     show: scaleShow(scale(majorKeyFor(fifths).tonic, 'major')),
+    quiz: choice(`${keyName(majorKeyFor(fifths))} / ${keyName(minorKeyFor(fifths))}`, SIGNATURE_POOL),
   };
 }
 
@@ -155,6 +174,7 @@ export function relativeParallelCard(k: Key, relation: 'relative' | 'parallel'):
         : `${signatureCount(keySignature(k))} → ${signatureCount(keySignature(other))}`,
     ],
     show: scaleShow(scale(other.tonic, other.mode === 'major' ? 'major' : 'natural-minor')),
+    quiz: choice(keyName(other), KEY_POOL[other.mode]),
   };
 }
 
@@ -170,6 +190,11 @@ export function scaleSpellingCard(tonic: Note, type: ScaleType): Card {
     details,
     notes: s.degrees.map((d) => ({ note: noteName(d.note), label: d.label })),
     show: scaleShow(s),
+    quiz: {
+      kind: 'notes',
+      expected: s.degrees.slice(0, 7).map((d) => d.note),
+      spelling: s.degrees.slice(0, 7).map((d) => ({ number: d.degree, direction: 'up', from: tonic.letter, scale: true })),
+    },
   };
 }
 
@@ -187,6 +212,7 @@ export function scaleDegreeCard(tonic: Note, type: ScaleType, degree: number): C
     details: differs ? [`Descending: ${noteName(descending.note)}`] : [],
     notes: s.degrees.map((d) => ({ note: noteName(d.note), label: String(d.degree) })),
     show: scaleShow(s, ascending),
+    quiz: oneNote(ascending, degree, 'up', tonic, true),
   };
 }
 
@@ -202,6 +228,7 @@ export function intervalCard(root: Note, iv: Interval, direction: Direction, num
     answer: noteName(target),
     details: [numeral ? `${intervalName(iv)} above ${noteName(root)}` : `${noteName(root)} ${direction} to ${noteName(target)}`],
     show: intervalShow(root, target, direction),
+    quiz: oneNote(target, iv.number, direction, root, false),
   };
 }
 
@@ -217,6 +244,8 @@ export function reverseIntervalCard(root: Note, iv: Interval, direction: Directi
     answer: noteName(root),
     details: [`${intervalName(iv)} ${direction === 'up' ? 'above' : 'below'} ${noteName(root)} is ${noteName(given)}`],
     show: intervalShow(root, given, direction),
+    // The root is found by going back the other way from the note given.
+    quiz: oneNote(root, iv.number, direction === 'up' ? 'down' : 'up', given, false),
   };
 }
 
@@ -232,6 +261,7 @@ export function intervalNamingCard(root: Note, iv: Interval, direction: Directio
     answer: intervalName(named),
     details: [semitoneText(iv)],
     show: intervalShow(root, other, direction),
+    quiz: choice(intervalName(named), INTERVAL_POOL),
   };
 }
 

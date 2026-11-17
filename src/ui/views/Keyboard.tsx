@@ -6,6 +6,9 @@ export interface KeyMark {
   readonly role: Role;
 }
 
+/** A finger going down on a note, and lifting from it. */
+export type Press = (midi: number, phase: 'down' | 'up') => void;
+
 const WHITE_W = 24;
 const WHITE_H = 120;
 const BLACK_W = 15;
@@ -20,7 +23,15 @@ const whiteNumber = (m: number) => Math.floor(m / 12) * 7 + WHITE_INDEX[m % 12]!
  * Piano keyboard (V-1). Shows whole octaves around the marked keys, at least
  * two, and scrolls sideways when that is wider than the screen.
  */
-export function Keyboard({ marks, center }: { marks: readonly KeyMark[]; center: number }) {
+export function Keyboard({ marks, center, onPress }: { marks: readonly KeyMark[]; center: number; onPress?: Press }) {
+  const handlers = (m: number) =>
+    onPress && {
+      onPointerDown: (e: PointerEvent) => {
+        (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
+        onPress(m, 'down');
+      },
+      onPointerUp: () => onPress(m, 'up'),
+    };
   const mids = marks.map((m) => m.midi);
   const lowC = Math.floor(Math.min(...(mids.length ? mids : [center - 6])) / 12) * 12;
   let highB = Math.ceil((Math.max(...(mids.length ? mids : [center + 6])) + 1) / 12) * 12 - 1;
@@ -46,7 +57,7 @@ export function Keyboard({ marks, center }: { marks: readonly KeyMark[]; center:
           const mark = markAt.get(m);
           const x = xOfWhite(m);
           return (
-            <g key={m}>
+            <g key={m} data-midi={m} {...handlers(m)}>
               <rect x={x + 0.5} y={0.5} width={WHITE_W - 1} height={WHITE_H} rx={3} class={`key white ${mark ? mark.role : ''}`} />
               {m % 12 === 0 && !mark && (
                 <text x={x + WHITE_W / 2} y={WHITE_H - 8} class="key-c">
@@ -63,7 +74,7 @@ export function Keyboard({ marks, center }: { marks: readonly KeyMark[]; center:
             const mark = markAt.get(m);
             const x = xOfWhite(m - 1) + WHITE_W - BLACK_W / 2;
             return (
-              <g key={m}>
+              <g key={m} data-midi={m} {...handlers(m)}>
                 <rect x={x} y={0.5} width={BLACK_W} height={BLACK_H} rx={2} class={`key black ${mark ? mark.role : ''}`} />
                 {mark && <KeyLabel x={x + BLACK_W / 2} y={BLACK_H - 12} mark={mark} />}
               </g>

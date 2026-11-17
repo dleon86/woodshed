@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft 10 (M4 device test results recorded) |
+| **Status** | Draft 11 (M5a decisions recorded) |
 | **Date** | 2026-11-15 |
 | **Owner** | Danny |
 
@@ -157,6 +157,7 @@ Three interchangeable views, used both to display answers and to enter them.
 - **V-4** The instrument profile decides the view: keyboard shows the keyboard, guitar and bass show the fretboard. There is no separate view switcher. The same card re-renders in place when the instrument changes.
 - **V-5** Label options: note names, scale degrees, intervals from the root, or none (for self-testing).
 - **V-6 Pinned staff:** the staff can be pinned so it stays visible together with the keyboard or the fretboard (a toggle above the view). Both show the same notes and update together, and notes can be entered on either.
+- **V-7 Playable views:** touching a key or a fret sounds that note, anywhere in the app. Notes overlap, so several touches make a chord. In a quiz the same touch also enters the note (Q-1).
 
 ### 6.4 Audio
 
@@ -258,8 +259,8 @@ Each milestone ends with something usable on the phone.
 | M2 | Flash cards | Deck builder, flip cards for scale, key signature and interval families; text-only answers. Replaces the paper deck |
 | M3 | Views | Keyboard, fretboard and staff display answers; pinned staff; keyboard, guitar and bass profiles |
 | M4 | Audio | Notes, intervals, scales and chords play back. Also a rough mic check: a bare tuner readout (note and cents) on both real devices, to find permission problems and playback/mic conflicts early. It is a test page, not the M7 tuner |
-| M5a | Quiz modes | Tap entry on the note-name picker and the keyboard, multiple choice, feedback, session summary, progress recording (G-1) |
-| M5b | Quiz entry on fretboard and staff | Tap entry on the fretboard and the staff, including choosing an accidental on the staff |
+| M5a | Quiz modes | Tap entry on the note-name picker, the keyboard and the fretboard, multiple choice, feedback, session summary, progress recording (G-1), playable keys and frets (V-7) |
+| M5b | Quiz entry on the staff, and session options | Tap entry on the staff, including choosing an accidental; the optional timer and the timed and endless session lengths (Q-6) |
 | M6 | Chord tool | Name → notes, notes → name, chords in a key, chord card families |
 | M7 | Mic input | Tuner readout, play-the-answer, scale run, chord arpeggio |
 | M8 | Progress and polish | Heat map, weak-spots deck, export/import, offline check |
@@ -355,6 +356,14 @@ Each milestone ends with something usable on the phone.
 | M4 device test (Pixel, iPad) | Playback, drone and the mic check work on both. Found and fixed: the drone was close to inaudible (pure low sine tones on small speakers; now a triangle wave with strong partials at note volume); Play on the iPad stopped until a reload after leaving the tab (A-9); the pitch detector stopped at 1,500 Hz, below a whistle (now up to the top of the piano, 4,186 Hz). The mic check gained an input level bar to tell "no sound arriving" from "no clear note" |
 | Silent mode (A-8) | Respected, not overridden |
 | App shell | Pinned to the screen edges (`position: fixed`), not sized with `100dvh`, with the section tabs above page content. On the Pixel the sticky Start bar once covered the tabs; it could not be reproduced, and this removes the likely cause |
+| Quiz mode | Chosen next to the session length in the deck builder: Flash (flip and self-grade) or Quiz (enter the answer). The same decks, sessions and missed-card rule serve both |
+| Which cards are multiple choice (Q-2) | Key signature, reverse key signature, relative / parallel and interval naming: four options, the wrong ones drawn from near the right one (4♭ beside 3♭ and 5♭). Scale spelling, scale degree, interval and reverse interval are answered with notes |
+| Entering notes (Q-1) | The picker: choose an accidental (it returns to natural after each note), then a letter. A one-note card is checked at once; a scale is entered in order, with Undo, then Check. Tapping keys or frets enters notes too. On a keyboard: letters, Backspace and Enter |
+| Feedback (Q-4) | Each entered note turns green or red; a right note spelled differently is green with a dotted edge and its reason (Q-5). The right answer is always shown, drawn on the view, and played. Next moves on |
+| Fretboard entry | Arrived in M5a with the playable frets: a fret gives a pitch, like a key, so it needed no extra work. Staff entry remains for M5b |
+| Progress recording (G-1) | Every answer in both modes is stored in IndexedDB with its time and input method, and each card's record is updated in the same transaction. If storage is unavailable, practice works and is not recorded. The Progress screen shows the totals until M8 builds the heat map on them |
+| Spaced-repetition fields | Interval of 1 day, then 3, then multiplied by an ease that starts at 2.5 (up 0.05 when right, down 0.2 when missed, kept between 1.3 and 2.8); a miss is due again in ten minutes. Stored, not yet used |
+| iPad mic (M4 follow-up) | Sound reached the iPad mic but no note was found. The detector ignored quiet input, and with automatic gain off the iPad's signal is quiet; the loudness gate is now very low and the test page shows the level as a number. To be confirmed on the device |
 | No audio support | Play and Drone are disabled, not silent, in a browser without Web Audio |
 | Mic check (M4) | A test block in Settings: start, permission states (P-9), then note, cents and Hz. Playback and the drone stop while it listens (P-8); leaving Settings releases the mic. The real tuner is M7 |
 | Audio testing limits | Browser tests check the scheduled pitches and the mic path on Chromium. Playwright's WebKit build for Windows has no Web Audio, so Safari audio is verified only on the real iPad |
@@ -363,7 +372,7 @@ Each milestone ends with something usable on the phone.
 
 ### Open
 
-1. **Existing apps:** no survey has been done of apps that already cover some of these features. It was meant for before M2 and did not happen. The flash cards did not need it. Quiz design (M5a) is where borrowed ideas would help most, so: a quick look before M5a, or drop the question then.
+1. None at present. (The survey of existing apps was dropped at M5a: the app's direction is set by using it.)
 
 ## Appendix: the original paper deck
 

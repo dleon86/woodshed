@@ -151,6 +151,31 @@ function voice(ctx: AudioContext, out: AudioNode, midi: number, start: number, d
   return { stop };
 }
 
+/* ---------- Single notes from taps (V-7) ---------- */
+
+/**
+ * Sound one note now, on top of anything else sounding, so several taps make
+ * a chord. Returns false when audio has not been started yet: a touch going
+ * down does not count as a tap for the browser's autoplay rule, so the caller
+ * tries again when the finger lifts.
+ */
+export function tapNote(midi: number, reference: number): boolean {
+  if (!audioSupported) return false;
+  if (!context || context.state !== 'running') {
+    void audioContext().catch(() => {});
+    return false;
+  }
+  voice(context, output!, midi, context.currentTime + 0.005, 1.4, reference);
+  return true;
+}
+
+/** Sound a note as soon as audio is running. Call when the finger lifts: that is a real tap, so audio may start. */
+export async function tapNoteWhenReady(midi: number, reference: number): Promise<void> {
+  if (!audioSupported) return;
+  const ctx = await audioContext();
+  voice(ctx, output!, midi, ctx.currentTime + 0.005, 1.4, reference);
+}
+
 /* ---------- Playback ---------- */
 
 let playing: { voices: Voice[]; timer: ReturnType<typeof setTimeout> } | undefined;
@@ -205,7 +230,7 @@ export async function startDrone(midi: number, reference: number): Promise<void>
   const hz = midiToFrequency(midi, reference);
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(0, ctx.currentTime);
-  gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.3);
+  gain.gain.linearRampToValueAtTime(0.22, ctx.currentTime + 0.3);
   gain.connect(output!);
   const partials: Array<[number, number, OscillatorType]> = [
     [1, 1, 'triangle'],

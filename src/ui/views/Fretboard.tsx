@@ -1,3 +1,4 @@
+import type { Press } from './Keyboard';
 import type { Role } from './labels';
 
 export interface FretMark {
@@ -25,6 +26,9 @@ export function Fretboard(props: {
   marks: readonly FretMark[];
   leftHanded: boolean;
   stringNames: readonly string[];
+  /** MIDI number of each open string, lowest string first; with `onPress`, every fret can be tapped. */
+  openMidis?: readonly number[];
+  onPress?: Press;
 }) {
   const { strings, frets, marks, leftHanded } = props;
   const width = OPEN_W + frets * FRET_W + 8;
@@ -77,7 +81,7 @@ export function Fretboard(props: {
             </text>
           ))}
         {marks.map((m) => (
-          <g key={`${m.string}:${m.fret}`}>
+          <g key={`${m.string}:${m.fret}`} class="fret-mark">
             <circle cx={X(centerX(m.fret))} cy={stringY(m.string)} r={11} class={`mark ${m.role}`} />
             {m.label && (
               <text
@@ -91,6 +95,25 @@ export function Fretboard(props: {
             )}
           </g>
         ))}
+        {/* Invisible tap areas, one per string and fret, above everything else. */}
+        {props.onPress &&
+          props.openMidis?.map((open, s) =>
+            Array.from({ length: frets + 1 }, (_, f) => (
+              <rect
+                key={`${s}:${f}`}
+                class="fret-hit"
+                x={Math.min(X(f === 0 ? 0 : fretX(f - 1)), X(fretX(f)))}
+                y={stringY(s) - STRING_GAP / 2}
+                width={f === 0 ? OPEN_W : FRET_W}
+                height={STRING_GAP}
+                onPointerDown={(e) => {
+                  (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
+                  props.onPress!(open + f, 'down');
+                }}
+                onPointerUp={() => props.onPress!(open + f, 'up')}
+              />
+            )),
+          )}
       </svg>
     </div>
   );

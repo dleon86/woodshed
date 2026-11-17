@@ -311,3 +311,146 @@ test('Play recovers after the audio is interrupted (iPad: leaving the tab or sle
   const running = await page.evaluate(() => (window as unknown as { __contexts: AudioContext[] }).__contexts[1]!.state);
   expect(running).toBe('running');
 });
+
+/* ---------- Quiz (M5a) ---------- */
+
+/** Open the builder with a saved deck and mode, so a test gets known cards. */
+async function openDeck(page: Page, deck: Record<string, unknown>, mode: 'flash' | 'quiz' = 'quiz'): Promise<void> {
+  await page.goto('./#/practice');
+  await page.evaluate(
+    ([d, m]) => {
+      localStorage.clear();
+      indexedDB.deleteDatabase('woodshed');
+      localStorage.setItem('woodshed.mode', m as string);
+      localStorage.setItem(
+        'woodshed.deck',
+        JSON.stringify({
+          keys: 'custom',
+          customKeys: [0],
+          scaleTypes: ['major'],
+          intervals: ['P5'],
+          directions: ['up'],
+          roots: 'natural',
+          wording: 'names',
+          ...(d as object),
+        }),
+      );
+    },
+    [deck, mode] as const,
+  );
+  await page.reload();
+  await page.getByRole('button', { name: /^Start · / }).click();
+}
+
+test('quiz: multiple choice gives feedback, shows the answer, and records progress', async ({ page }) => {
+  const errors = watchErrors(page);
+  await openDeck(page, { families: ['key-signature'] }); // one card: C major → 0
+  await expect(page.locator('.flashcard-prompt')).toHaveText('C major');
+  await expect(page.locator('.choices button')).toHaveCount(4);
+  await expectNoOverflow(page);
+
+  await page.getByRole('button', { name: '0', exact: true }).click();
+  await expect(page.locator('.verdict')).toHaveText('Correct');
+  await expect(page.locator('svg.keyboard .mark')).toHaveCount(8); // Q-4: the answer is drawn
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.locator('.summary-stats')).toContainText('1 / 1');
+
+  await page.getByRole('link', { name: 'Progress' }).click();
+  await expect(page.locator('.summary-stats')).toContainText('answers recorded');
+  await expect(page.locator('.summary-stats .stat').first()).toHaveText('1');
+  await expect(page.locator('.summary-stats')).toContainText('100%');
+  expect(errors).toEqual([]);
+});
+
+test('quiz: a wrong choice is marked, and the card comes back', async ({ page }) => {
+  await openDeck(page, { families: ['key-signature'] });
+  await page.locator('.choices button').filter({ hasNotText: /^0$/ }).first().click();
+  await expect(page.locator('.verdict')).toHaveText('Not quite');
+  await expect(page.locator('.flashcard-answer')).toHaveText('0');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.locator('.flashcard-prompt')).toHaveText('C major'); // back again (F-3)
+  await expect(page.locator('.drill-top')).toContainText('0 / 1');
+});
+
+test('quiz: notes on the picker, with the note for a different spelling (Q-5)', async ({ page }) => {
+  // The six degree cards of C♯ major, in any order.
+  await openDeck(page, { families: ['scale-degree'], customKeys: [7] });
+  const answers: Record<string, [string, string]> = {
+    '2nd': ['Sharp', 'D'],
+    '3rd': ['Natural', 'F'], // E♯ spelled as F: right, with a note
+    '4th': ['Sharp', 'F'],
+    '5th': ['Sharp', 'G'],
+    '6th': ['Sharp', 'A'],
+    '7th': ['Sharp', 'B'],
+  };
+  for (let i = 0; i < 6; i++) {
+    const prompt = await page.locator('.flashcard-prompt').innerText();
+    const [accidental, letter] = answers[prompt.slice(0, 3)]!;
+    await page.getByRole('radio', { name: accidental, exact: true }).click();
+    await page.getByRole('group', { name: 'Note' }).getByRole('button', { name: new RegExp(`^${letter}`) }).click();
+    await expect(page.locator('.verdict'), prompt).toHaveText('Correct');
+    if (prompt.startsWith('3rd')) {
+      await expect(page.locator('.why')).toHaveText(
+        'Written E♯ here: a scale uses each letter once, and the 3rd above C is an E.',
+      );
+    } else {
+      await expect(page.locator('.why')).toHaveCount(0);
+    }
+    await expectNoOverflow(page);
+    await page.getByRole('button', { name: 'Next' }).click();
+  }
+  await expect(page.locator('.summary-stats')).toContainText('6 / 6');
+});
+
+test('quiz: a scale is entered note by note and checked', async ({ page }) => {
+  await openDeck(page, { families: ['scale-spelling'], customKeys: [2] }); // D major
+  await expect(page.locator('.answer-slots li')).toHaveCount(7);
+  const letters = page.getByRole('group', { name: 'Note' });
+  const entered: Array<[string, string]> = [
+    ['', 'D'],
+    ['', 'E'],
+    ['', 'F'], // should be F sharp
+    ['', 'G'],
+    ['', 'A'],
+    ['', 'B'],
+    ['Sharp', 'C'],
+  ];
+  for (const [accidental, letter] of entered) {
+    if (accidental) await page.getByRole('radio', { name: accidental, exact: true }).click();
+    await letters.getByRole('button', { name: new RegExp(`^${letter}`) }).click();
+  }
+  await page.getByRole('button', { name: 'Check' }).click();
+  await expect(page.locator('.verdict')).toHaveText('Not quite');
+  await expect(page.locator('.answer-slots li[data-mark="wrong"]')).toHaveCount(1);
+  await expect(page.locator('.answer-slots li[data-mark="correct"]')).toHaveCount(6);
+  await expectNoOverflow(page);
+});
+
+test('quiz: tapping the keyboard answers, and keys play when touched', async ({ page }) => {
+  const started = await recordOscillators(page);
+  await openDeck(page, { families: ['interval'] }); // perfect 5th above each natural
+  const prompt = await page.locator('.flashcard-prompt').innerText(); // "Perfect 5th above G"
+  const root = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[prompt.slice(-1)]!;
+  const answer = (root + 7) % 12;
+  await expect(page.locator('svg.keyboard .mark')).toHaveCount(0); // nothing given away
+  await page.locator(`svg.keyboard g[data-midi="${48 + answer}"]`).click();
+  await expect(page.locator('.verdict')).toHaveText('Correct');
+  await expect(page.locator('svg.keyboard .mark')).toHaveCount(2);
+
+  const hasAudio = await page.evaluate(() => typeof AudioContext !== 'undefined');
+  if (hasAudio) {
+    await expect.poll(async () => (await started()).length, { message: 'a tapped key sounds' }).toBeGreaterThan(0);
+  }
+});
+
+test('frets play when touched, several at once', async ({ page }) => {
+  const started = await recordOscillators(page);
+  await open(page, '#/explore');
+  await skipWithoutAudio(page);
+  await page.getByLabel('Instrument').selectOption('guitar');
+  const hits = page.locator('.fret-hit');
+  await hits.nth(0).click(); // low E open string: the first touch also starts audio
+  await expect.poll(async () => near(await started(), 82.41), { message: 'open low E sounds' }).toBe(true);
+  await hits.nth(3).click(); // same string, 3rd fret: G
+  await expect.poll(async () => near(await started(), 98.0), { message: 'G on the low E string sounds' }).toBe(true);
+});

@@ -1,9 +1,9 @@
-import { useEffect } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 import { audioSupported } from '../../audio/player';
 import type { Show } from '../../cards';
 import { fretPositions, placeNotes, uniqueNotes, writtenPitch } from '../../instruments';
 import { profile, view } from '../../state/session';
-import { droneFor, droneOn, micState, playShow, playing, stopPlaying, toggleDrone } from '../../state/sound';
+import { droneFor, droneOn, micState, playShow, playing, stopPlaying, tapDown, tapUp, toggleDrone } from '../../state/sound';
 import {
   LABEL_STYLES,
   type LabelStyle,
@@ -16,7 +16,7 @@ import {
 } from '../../state/views';
 import { midi, noteId, noteName } from '../../theory';
 import { Fretboard } from './Fretboard';
-import { Keyboard } from './Keyboard';
+import { Keyboard, type Press } from './Keyboard';
 import { Staff } from './Staff';
 import { labelFor, roleOf } from './labels';
 
@@ -33,7 +33,19 @@ const LABEL_NAME: Record<LabelStyle, string> = {
  * when pinned. `show` is the answer to draw; without it the instrument is
  * drawn empty (before a card is flipped).
  */
-export function InstrumentView({ show }: { show?: Show | undefined }) {
+export function InstrumentView({ show, onTap }: { show?: Show | undefined; onTap?: ((midi: number) => void) | undefined }) {
+  // V-7: every key and fret sounds when touched, several at once. The first touch of a visit
+  // cannot start audio on the way down (browsers need a completed tap), so it sounds on the way up.
+  const unsounded = useRef<number | null>(null);
+  const press: Press = (m, phase) => {
+    if (phase === 'down') {
+      unsounded.current = tapDown(m) ? null : m;
+      onTap?.(m);
+    } else if (unsounded.current === m) {
+      unsounded.current = null;
+      tapUp(m);
+    }
+  };
   const active = view.value;
   const p = profile.value;
   const style = labelStyle.value;
@@ -64,7 +76,7 @@ export function InstrumentView({ show }: { show?: Show | undefined }) {
 
   let main;
   if (active === 'keyboard') {
-    main = <Keyboard marks={placed.map((pitch, i) => ({ midi: midi(pitch), ...describe(i) }))} center={p.center} />;
+    main = <Keyboard marks={placed.map((pitch, i) => ({ midi: midi(pitch), ...describe(i) }))} center={p.center} onPress={press} />;
   } else {
     const tuning = activeTuning.value;
     const frets = activeFret.value?.frets;
@@ -75,6 +87,8 @@ export function InstrumentView({ show }: { show?: Show | undefined }) {
           frets={frets}
           leftHanded={leftHanded.value}
           stringNames={tuning.strings.map(noteName)}
+          openMidis={tuning.strings.map(midi)}
+          onPress={press}
           marks={
             show
               ? fretPositions(tuning.strings, frets, uniqueNotes(show.notes)).map((pos) => ({

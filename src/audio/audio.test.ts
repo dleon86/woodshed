@@ -90,6 +90,12 @@ describe('pitch detection (P-1, P-2)', () => {
     expect(Math.abs(cents(whistle.hz, 2000))).toBeLessThan(10);
   });
 
+  it('still finds the note in a very quiet signal (mics with automatic gain off)', () => {
+    const quiet = wave(196, RATE, SIZE).map((v) => v * 0.01); // about 0.002 RMS
+    expect(level(quiet)).toBeLessThan(0.004);
+    expect(Math.abs(cents(detectPitch(quiet, RATE)!.hz, 196))).toBeLessThan(5);
+  });
+
   it('measures loudness', () => {
     expect(level(new Float32Array(SIZE))).toBe(0);
     expect(level(wave(440, RATE, SIZE, [1]))).toBeCloseTo(0.3 / Math.SQRT2, 2);

@@ -40,7 +40,10 @@ export function MicCheck() {
           <div class="progress" role="meter" aria-label="Input level" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(Math.min(1, Math.sqrt(micLevel.value * 4)) * 100)}>
             <span style={{ width: `${Math.min(1, Math.sqrt(micLevel.value * 4)) * 100}%` }} />
           </div>
-          <span class="muted small">{micLevel.value < 0.003 ? 'No sound is reaching the microphone.' : 'Sound is arriving.'}</span>
+          <span class="muted small">
+            {micLevel.value < 0.0008 ? 'No sound is reaching the microphone.' : 'Sound is arriving.'} Level{' '}
+            {micLevel.value.toFixed(4)}
+          </span>
         </div>
       )}
       <div class="mic-readout" role="status" aria-live="polite">

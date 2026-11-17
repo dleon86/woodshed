@@ -705,6 +705,30 @@ svg text {
   font-size: 8px;
 }
 
+/* Keys and frets are playable (V-7) */
+svg.keyboard g,
+.fret-hit {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+svg.keyboard g:active .key.white {
+  fill: #e8d5bd;
+}
+
+svg.keyboard g:active .key.black {
+  fill: #5a4636;
+}
+
+.fret-hit {
+  fill: transparent;
+}
+
+.fret-hit:active {
+  fill: var(--accent);
+  fill-opacity: 0.25;
+}
+
 /* Fretboard */
 .board {
   fill: var(--surface-2);
@@ -882,6 +906,13 @@ button.secondary {
   border-top: 1px solid var(--border);
 }
 
+/* Mode and session length share a row: the bar must stay short on a phone. */
+.start-options {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 8px;
+}
+
 /* ---------- Practice: drill ---------- */
 
 .drill {
@@ -933,6 +964,142 @@ button.secondary {
 .drill-hint {
   margin: 0;
   text-align: center;
+}
+
+/* ---------- Practice: quiz (PRD 6.2) ---------- */
+
+.quiz {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.quiz-card {
+  cursor: default;
+}
+
+.quiz-card[data-result='correct'] {
+  border-color: var(--good);
+}
+
+.quiz-card[data-result='wrong'] {
+  border-color: var(--bad);
+}
+
+.answer-slots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.answer-slots li {
+  display: grid;
+  place-items: center;
+  /* Seven boxes (a scale) fit one row on a phone. */
+  min-width: 2.3em;
+  min-height: 2.3em;
+  padding: 0 3px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  font-family: var(--font-music);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.answer-slots li[data-empty='true'] {
+  border-style: dashed;
+}
+
+/* Q-4: right notes green, wrong notes red. A right note spelled differently is green with a dotted edge. */
+.answer-slots li[data-mark='correct'],
+.answer-slots li[data-mark='respelled'] {
+  border-color: var(--good);
+  color: var(--good);
+}
+
+.answer-slots li[data-mark='respelled'] {
+  border-style: dotted;
+}
+
+.answer-slots li[data-mark='wrong'] {
+  border-color: var(--bad);
+  color: var(--bad);
+}
+
+.feedback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.verdict {
+  font-weight: 700;
+  color: var(--bad);
+}
+
+.quiz-card[data-result='correct'] .verdict {
+  color: var(--good);
+}
+
+.flashcard-detail.why {
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 0.9rem;
+}
+
+.choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.choices .choice {
+  min-height: 60px;
+  padding: 8px;
+  border-radius: var(--radius);
+  font-family: var(--font-music);
+  font-size: 1.15rem;
+}
+
+.note-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.note-picker .segmented button {
+  font-family: var(--font-music);
+  font-size: 1.2rem;
+}
+
+.letters {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.letters .letter {
+  min-height: 52px;
+  padding: 0;
+  border-radius: 12px;
+  font-family: var(--font-music);
+  font-size: 1.2rem;
+}
+
+.picker-actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 10px;
+}
+
+button.secondary:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* ---------- Practice: summary ---------- */

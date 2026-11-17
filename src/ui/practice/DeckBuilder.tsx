@@ -1,9 +1,11 @@
 import type { ComponentChildren } from 'preact';
 import { type Family, FAMILIES, FAMILY_INFO, V1_INTERVALS } from '../../cards';
 import {
+  MODES,
   SESSION_LENGTHS,
   deckCards,
   deckConfig,
+  mode,
   sessionLength,
   start,
   updateDeck,
@@ -58,6 +60,9 @@ const WORDINGS = [
   ['numerals', 'Numerals'],
   ['both', 'Both'],
 ] as const;
+
+/** Flash cards are flipped and self-graded; a quiz asks for the answer (PRD 6.1, 6.2). */
+const MODE_LABEL = { flash: 'Flash', quiz: 'Quiz' } as const;
 
 const ALL_FIFTHS = Array.from({ length: 15 }, (_, i) => i - 7);
 
@@ -163,12 +168,20 @@ export function DeckBuilder() {
       )}
 
       <div class="start-bar">
-        <Segmented
-          label="Session length"
-          options={SESSION_LENGTHS.map((n) => [n, n === 0 ? 'All' : String(n)] as const)}
-          value={length}
-          onChange={(n) => (sessionLength.value = n)}
-        />
+        <div class="start-options">
+          <Segmented
+            label="Mode"
+            options={MODES.map((m) => [m, MODE_LABEL[m]] as const)}
+            value={mode.value}
+            onChange={(m) => (mode.value = m)}
+          />
+          <Segmented
+            label="Session length"
+            options={SESSION_LENGTHS.map((n) => [n, n === 0 ? 'All' : String(n)] as const)}
+            value={length}
+            onChange={(n) => (sessionLength.value = n)}
+          />
+        </div>
         <button type="button" class="primary" disabled={count === 0} onClick={() => start(deckCards.value)}>
           {count > 0
             ? `Start · ${sessionCount} of ${count} cards`
