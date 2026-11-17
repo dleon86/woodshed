@@ -1,4 +1,4 @@
-import type { Press } from './Keyboard';
+import { type Press, capturePointer } from './Keyboard';
 import type { Role } from './labels';
 
 export interface FretMark {
@@ -107,10 +107,12 @@ export function Fretboard(props: {
                 width={f === 0 ? OPEN_W : FRET_W}
                 height={STRING_GAP}
                 onPointerDown={(e) => {
-                  (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
+                  capturePointer(e);
                   props.onPress!(open + f, 'down');
                 }}
                 onPointerUp={() => props.onPress!(open + f, 'up')}
+                onPointerCancel={() => props.onPress!(open + f, 'up')}
+                onLostPointerCapture={() => props.onPress!(open + f, 'up')}
               />
             )),
           )}

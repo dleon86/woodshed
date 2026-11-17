@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft 11 (M5a decisions recorded) |
+| **Status** | Draft 12 (M5a device test results recorded) |
 | **Date** | 2026-11-15 |
 | **Owner** | Danny |
 
@@ -157,7 +157,7 @@ Three interchangeable views, used both to display answers and to enter them.
 - **V-4** The instrument profile decides the view: keyboard shows the keyboard, guitar and bass show the fretboard. There is no separate view switcher. The same card re-renders in place when the instrument changes.
 - **V-5** Label options: note names, scale degrees, intervals from the root, or none (for self-testing).
 - **V-6 Pinned staff:** the staff can be pinned so it stays visible together with the keyboard or the fretboard (a toggle above the view). Both show the same notes and update together, and notes can be entered on either.
-- **V-7 Playable views:** touching a key or a fret sounds that note, anywhere in the app. Notes overlap, so several touches make a chord. In a quiz the same touch also enters the note (Q-1).
+- **V-7 Playable views:** touching a key or a fret sounds that note, anywhere in the app. The note lasts as long as the finger is down and fades when it lifts. Notes overlap, so several touches make a chord. In a quiz the same touch also enters the note (Q-1). A **Tone** panel beside the instrument sets the attack, decay, sustain and release of touched notes.
 
 ### 6.4 Audio
 
@@ -169,7 +169,7 @@ Three interchangeable views, used both to display answers and to enter them.
 - **A-6** Reference pitch adjustable (default A = 440 Hz).
 - **A-7** Audio starts only after a tap, as mobile browsers require.
 - **A-8** Silent mode is respected: when an iPad or iPhone is in silent mode the app makes no sound, like other web pages. (The first version of this requirement asked for sound in silent mode. On the real iPad it did not play, and muting was judged the right behaviour.) The page still declares a playback audio session where the browser supports it, which costs nothing.
-- **A-9** Sound recovers by itself after an interruption. iOS stops a page's audio when the tab is left or the device sleeps; the next tap on Play or Drone rebuilds the audio instead of needing a reload.
+- **A-9** Sound recovers by itself after an interruption. iOS stops a page's audio when the tab is left or the device sleeps, and does not always say so. All sound stops and the audio is discarded whenever the app goes to the background, and before each use the audio clock is checked to be advancing; the next tap rebuilds the audio instead of needing a reload.
 
 ### 6.5 Pitch detection (mic input)
 
@@ -364,6 +364,9 @@ Each milestone ends with something usable on the phone.
 | Progress recording (G-1) | Every answer in both modes is stored in IndexedDB with its time and input method, and each card's record is updated in the same transaction. If storage is unavailable, practice works and is not recorded. The Progress screen shows the totals until M8 builds the heat map on them |
 | Spaced-repetition fields | Interval of 1 day, then 3, then multiplied by an ease that starts at 2.5 (up 0.05 when right, down 0.2 when missed, kept between 1.3 and 2.8); a miss is due again in ten minutes. Stored, not yet used |
 | iPad mic (M4 follow-up) | Sound reached the iPad mic but no note was found. The detector ignored quiet input, and with automatic gain off the iPad's signal is quiet; the loudness gate is now very low and the test page shows the level as a number. To be confirmed on the device |
+| M5a device test (Pixel, iPad) | Quiz mode, tap to play, progress recording and the iPad mic check all work. Found and fixed: the answer playback after a quiz card was cut off at once (the view stopped it when the answer appeared); touched notes rang for a fixed 1.4 s, too long for playing scales (now held and released, with the Tone panel); iPad sound died after a ten-minute break (A-9 strengthened) |
+| Answer playback (Q-4) | On by default, with a setting to stay quiet after a quiz answer |
+| Touch envelope (V-7) | Attack 5 ms to 0.5 s (default 10 ms), decay 50 ms to 2 s (0.5 s), sustain 0 to 100% (50%), release 30 ms to 3 s (0.3 s). It applies to touched notes only; Play keeps its piano-like notes |
 | No audio support | Play and Drone are disabled, not silent, in a browser without Web Audio |
 | Mic check (M4) | A test block in Settings: start, permission states (P-9), then note, cents and Hz. Playback and the drone stop while it listens (P-8); leaving Settings releases the mic. The real tuner is M7 |
 | Audio testing limits | Browser tests check the scheduled pitches and the mic path on Chromium. Playwright's WebKit build for Windows has no Web Audio, so Safari audio is verified only on the real iPad |

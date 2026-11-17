@@ -454,3 +454,91 @@ test('frets play when touched, several at once', async ({ page }) => {
   await hits.nth(3).click(); // same string, 3rd fret: G
   await expect.poll(async () => near(await started(), 98.0), { message: 'G on the low E string sounds' }).toBe(true);
 });
+
+/* ---------- Follow-ups from device testing ---------- */
+
+test('quiz: the answer plays after answering and is not cut off; "Quiet" turns that off', async ({ page }) => {
+  const started = await recordOscillators(page);
+  await openDeck(page, { families: ['key-signature'] });
+  await skipWithoutAudio(page);
+
+  await page.getByRole('button', { name: '0', exact: true }).click();
+  await expect(page.locator('.verdict')).toHaveText('Correct');
+  // The C major scale is sounding: eight notes were scheduled, and playback is still running.
+  await expect.poll(async () => fundamentals(await started()).length).toBe(8);
+  await page.waitForTimeout(600);
+  await expect(page.getByRole('button', { name: '■ Stop' })).toBeVisible();
+
+  // With the setting off, answering makes no sound.
+  await page.getByRole('link', { name: 'Settings' }).click();
+  await page.getByRole('radio', { name: 'Quiet' }).click();
+  await page.getByRole('link', { name: 'Practice' }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Same deck again' }).click();
+  const before = (await started()).length;
+  await page.getByRole('button', { name: '0', exact: true }).click();
+  await expect(page.locator('.verdict')).toHaveText('Correct');
+  await page.waitForTimeout(400);
+  expect((await started()).length).toBe(before);
+  await expect(page.getByRole('button', { name: '▶ Play' })).toBeVisible();
+});
+
+test('sound is rebuilt after the app has been in the background (iPad sleep)', async ({ page }) => {
+  await recordOscillators(page);
+  await open(page, '#/explore');
+  await skipWithoutAudio(page);
+  const contexts = () => page.evaluate(() => (window as unknown as { __contexts: AudioContext[] }).__contexts);
+  const count = async () => (await contexts()).length;
+
+  await page.getByRole('button', { name: '▶ Play' }).click();
+  await expect(page.getByRole('button', { name: '■ Stop' })).toBeVisible();
+  expect(await count()).toBe(1);
+
+  // The page goes to the background and comes back, as when the iPad locks.
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect(page.getByRole('button', { name: '▶ Play' })).toBeVisible(); // playback stopped
+
+  await page.getByRole('button', { name: '▶ Play' }).click();
+  await expect(page.getByRole('button', { name: '■ Stop' })).toBeVisible();
+  expect(await count(), 'fresh audio was built for the first tap back').toBe(2);
+  const states = await page.evaluate(() =>
+    (window as unknown as { __contexts: AudioContext[] }).__contexts.map((c) => c.state),
+  );
+  expect(states).toEqual(['closed', 'running']);
+});
+
+test('the Tone panel shapes touched notes and fits the screen', async ({ page }) => {
+  const started = await recordOscillators(page);
+  await open(page, '#/explore');
+  await skipWithoutAudio(page); // the Tone button is disabled when the browser cannot play sound
+  await page.getByRole('button', { name: 'Tone' }).click();
+  const panel = page.getByRole('group', { name: 'Tone of touched notes' });
+  await expect(panel).toBeVisible();
+  await expect(panel.getByRole('slider')).toHaveCount(4);
+  await expectNoOverflow(page);
+
+  // Move the Release slider to its maximum (set directly: not every browser lets a test "type" into a slider).
+  await panel.getByLabel('Release').evaluate((el) => {
+    (el as HTMLInputElement).value = '1';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect(panel).toContainText('3.0 s');
+  await panel.getByRole('button', { name: 'Reset' }).click();
+  await expect(panel).toContainText('300 ms');
+
+  // A held key sounds while the pointer is down.
+  const hasAudio = await page.evaluate(() => typeof AudioContext !== 'undefined');
+  if (!hasAudio) return;
+  const key = page.locator('svg.keyboard g[data-midi="60"]');
+  await key.click(); // the first touch starts audio and plays a short note
+  await expect.poll(async () => (await started()).length).toBeGreaterThan(0);
+  const before = (await started()).length;
+  await key.dispatchEvent('pointerdown', { pointerId: 7, bubbles: true });
+  await expect.poll(async () => (await started()).length, { message: 'the note starts on touch-down' }).toBeGreaterThan(before);
+  await key.dispatchEvent('pointerup', { pointerId: 7, bubbles: true });
+});

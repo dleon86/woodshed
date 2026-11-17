@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { audioSupported } from '../../audio/player';
 import type { Show } from '../../cards';
 import { fretPositions, placeNotes, uniqueNotes, writtenPitch } from '../../instruments';
@@ -18,6 +18,7 @@ import { midi, noteId, noteName } from '../../theory';
 import { Fretboard } from './Fretboard';
 import { Keyboard, type Press } from './Keyboard';
 import { Staff } from './Staff';
+import { TonePanel } from './TonePanel';
 import { labelFor, roleOf } from './labels';
 
 const LABEL_TEXT: Record<LabelStyle, string> = { names: 'A♭', degrees: '♭3', intervals: 'm3', none: 'Off' };
@@ -36,16 +37,18 @@ const LABEL_NAME: Record<LabelStyle, string> = {
 export function InstrumentView({ show, onTap }: { show?: Show | undefined; onTap?: ((midi: number) => void) | undefined }) {
   // V-7: every key and fret sounds when touched, several at once. The first touch of a visit
   // cannot start audio on the way down (browsers need a completed tap), so it sounds on the way up.
-  const unsounded = useRef<number | null>(null);
+  // Notes under fingers, and whether each could sound on the way down.
+  const held = useRef(new Map<number, boolean>());
   const press: Press = (m, phase) => {
     if (phase === 'down') {
-      unsounded.current = tapDown(m) ? null : m;
+      held.current.set(m, tapDown(m));
       onTap?.(m);
-    } else if (unsounded.current === m) {
-      unsounded.current = null;
-      tapUp(m);
+    } else if (held.current.has(m)) {
+      tapUp(m, held.current.get(m)!);
+      held.current.delete(m);
     }
   };
+  const [toneOpen, setToneOpen] = useState(false);
   const active = view.value;
   const p = profile.value;
   const style = labelStyle.value;
@@ -56,7 +59,9 @@ export function InstrumentView({ show, onTap }: { show?: Show | undefined; onTap
   const drone = droneOn.value;
   useEffect(() => {
     droneFor(show);
-    return stopPlaying;
+    // Only an answer leaving the screen stops its playback. The answer arriving must not:
+    // in a quiz it starts playing at that very moment (Q-4).
+    return answer ? stopPlaying : undefined;
   }, [answer, drone, p.id]);
   useEffect(() => () => droneFor(undefined), []);
   const listening = micState.value === 'listening' || micState.value === 'asking';
@@ -143,6 +148,17 @@ export function InstrumentView({ show, onTap }: { show?: Show | undefined; onTap
           >
             Drone
           </button>
+          <button
+            type="button"
+            class="chip compact"
+            aria-expanded={toneOpen}
+            aria-pressed={toneOpen}
+            disabled={!audioSupported}
+            title="How touched notes rise and fade"
+            onClick={() => setToneOpen(!toneOpen)}
+          >
+            Tone
+          </button>
           {active !== 'staff' && (
             <button
               type="button"
@@ -155,6 +171,7 @@ export function InstrumentView({ show, onTap }: { show?: Show | undefined; onTap
           )}
         </div>
       </div>
+      {toneOpen && <TonePanel />}
       <div class="view-main">{main}</div>
       {/* V-6: the pinned staff shows the same notes alongside the keyboard or fretboard. */}
       {pinStaff.value && active !== 'staff' && <div class="view-pinned">{staff}</div>}

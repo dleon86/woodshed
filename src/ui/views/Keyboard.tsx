@@ -9,6 +9,19 @@ export interface KeyMark {
 /** A finger going down on a note, and lifting from it. */
 export type Press = (midi: number, phase: 'down' | 'up') => void;
 
+/**
+ * Keep a pointer on the element it went down on, so the note ends when that
+ * finger lifts wherever it has slid to. Capturing can throw (a pointer that
+ * is already gone); the note must still sound, so that is ignored.
+ */
+export function capturePointer(e: PointerEvent): void {
+  try {
+    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+  } catch {
+    /* not capturable: pointerup on the element still ends the note */
+  }
+}
+
 const WHITE_W = 24;
 const WHITE_H = 120;
 const BLACK_W = 15;
@@ -26,11 +39,14 @@ const whiteNumber = (m: number) => Math.floor(m / 12) * 7 + WHITE_INDEX[m % 12]!
 export function Keyboard({ marks, center, onPress }: { marks: readonly KeyMark[]; center: number; onPress?: Press }) {
   const handlers = (m: number) =>
     onPress && {
+      // Capture the pointer so the note ends when this finger lifts, wherever it has slid to.
       onPointerDown: (e: PointerEvent) => {
-        (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
+        capturePointer(e);
         onPress(m, 'down');
       },
       onPointerUp: () => onPress(m, 'up'),
+      onPointerCancel: () => onPress(m, 'up'),
+      onLostPointerCapture: () => onPress(m, 'up'),
     };
   const mids = marks.map((m) => m.midi);
   const lowC = Math.floor(Math.min(...(mids.length ? mids : [center - 6])) / 12) * 12;

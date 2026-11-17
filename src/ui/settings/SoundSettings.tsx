@@ -1,5 +1,5 @@
 import { INTERVAL_PATTERNS, SCALE_PATTERNS, TEMPO_RANGE } from '../../audio/sequence';
-import { REFERENCE_RANGE, intervalPattern, referencePitch, scalePattern, tempo } from '../../state/sound';
+import { REFERENCE_RANGE, autoPlayAnswer, intervalPattern, referencePitch, scalePattern, tempo } from '../../state/sound';
 
 const SCALE_LABEL = { up: 'Up', down: 'Down', both: 'Both' } as const;
 const INTERVAL_LABEL = { melodic: 'Melody', harmonic: 'Together', both: 'Both' } as const;
@@ -47,6 +47,20 @@ export function SoundSettings() {
           {INTERVAL_PATTERNS.map((p) => (
             <button key={p} type="button" role="radio" aria-checked={intervalPattern.value === p} onClick={() => (intervalPattern.value = p)}>
               {INTERVAL_LABEL[p]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div class="setting">
+        <div>
+          <h2 id="auto-play-label">After a quiz answer</h2>
+          <p class="muted">Play the right answer by itself, or stay quiet until you tap Play.</p>
+        </div>
+        <div class="segmented" role="radiogroup" aria-labelledby="auto-play-label">
+          {([true, false] as const).map((on) => (
+            <button key={String(on)} type="button" role="radio" aria-checked={autoPlayAnswer.value === on} onClick={() => (autoPlayAnswer.value = on)}>
+              {on ? 'Play it' : 'Quiet'}
             </button>
           ))}
         </div>

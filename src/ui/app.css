@@ -597,6 +597,41 @@ button.link {
   cursor: default;
 }
 
+.tone-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.tone-row {
+  display: grid;
+  grid-template-columns: 4.5em minmax(0, 1fr) 4em;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.tone-row output {
+  color: var(--muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tone-panel .range {
+  min-height: 40px;
+}
+
+.tone-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .view-buttons {
   display: flex;
   flex-wrap: wrap;

@@ -23,7 +23,7 @@ import {
 import { recordAnswer } from '../progress/db';
 import type { InputMethod } from '../progress/record';
 import { SCALE_TYPES } from '../theory';
-import { playShow } from './sound';
+import { autoPlayAnswer, playShow } from './sound';
 import { load, loadJson, save } from './storage';
 
 /* ---------- Deck builder (F-4) ---------- */
@@ -188,7 +188,7 @@ function settle(card: Card, result: Outcome, input: InputMethod): void {
   outcome.value = result;
   flipped.value = true;
   record(card, result.correct, input);
-  playShow(card.show);
+  if (autoPlayAnswer.value) playShow(card.show);
 }
 
 /** Add an entered note. A one-note card is checked at once; a scale waits for Check. */

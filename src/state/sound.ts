@@ -1,7 +1,20 @@
 import { effect, signal } from '@preact/signals';
 import { type MicSession, type MicState, startMic } from '../audio/mic';
 import { type TunerReading, tunerReading } from '../audio/pitch';
-import { audioContext, play, startDrone, stop, stopDrone, tapNote, tapNoteWhenReady } from '../audio/player';
+import {
+  ENVELOPE_RANGE,
+  type Envelope,
+  audioContext,
+  play,
+  releaseAllTouches,
+  resetAudio,
+  startDrone,
+  stop,
+  stopDrone,
+  touchEnd,
+  touchStart,
+  touchTap,
+} from '../audio/player';
 import {
   INTERVAL_PATTERNS,
   type IntervalPattern,
@@ -18,6 +31,10 @@ import { load, loadJson, save } from './storage';
 import { activeRange } from './views';
 
 /* ---------- Settings (PRD 6.4, 6.8) ---------- */
+
+/** Q-4: whether the right answer is played after each quiz card. */
+export const autoPlayAnswer = signal(load('autoPlay', ['on', 'off'] as const, 'on') === 'on');
+effect(() => save('autoPlay', autoPlayAnswer.value ? 'on' : 'off'));
 
 const numberIn = (min: number, max: number) => (v: unknown) =>
   typeof v === 'number' && v >= min && v <= max ? v : undefined;
@@ -71,18 +88,63 @@ export function stopPlaying(): void {
 
 const micBusy = () => micState.value === 'listening' || micState.value === 'asking';
 
-/**
- * A finger went down on a key or fret: sound it, on top of anything already
- * sounding. Returns false if audio is not running yet (the very first touch).
- */
-export function tapDown(midiNumber: number): boolean {
-  return !micBusy() && tapNote(midiNumber, referencePitch.value);
+/** The shape of a touched note (attack, decay, sustain, release), adjustable from the Tone panel. */
+const ENVELOPE_KEYS = ['attack', 'decay', 'sustain', 'release'] as const;
+const DEFAULT_ENVELOPE: Envelope = {
+  attack: ENVELOPE_RANGE.attack.default,
+  decay: ENVELOPE_RANGE.decay.default,
+  sustain: ENVELOPE_RANGE.sustain.default,
+  release: ENVELOPE_RANGE.release.default,
+};
+
+function parseEnvelope(value: unknown): Envelope | undefined {
+  if (typeof value !== 'object' || value === null) return undefined;
+  const v = value as Record<string, unknown>;
+  const out = { ...DEFAULT_ENVELOPE };
+  for (const key of ENVELOPE_KEYS) {
+    const n = v[key];
+    if (typeof n === 'number' && n >= ENVELOPE_RANGE[key].min && n <= ENVELOPE_RANGE[key].max) out[key] = n;
+  }
+  return out;
 }
 
-/** The finger lifted from a note that could not sound on the way down: start audio and sound it now. */
-export function tapUp(midiNumber: number): void {
-  if (!micBusy()) void tapNoteWhenReady(midiNumber, referencePitch.value).catch(() => {});
+export const envelope = signal<Envelope>(loadJson('envelope', parseEnvelope, DEFAULT_ENVELOPE));
+effect(() => save('envelope', JSON.stringify(envelope.value)));
+
+export function resetEnvelope(): void {
+  envelope.value = DEFAULT_ENVELOPE;
 }
+
+/**
+ * A finger went down on a key or fret: the note sounds until it lifts, on
+ * top of anything already sounding. Returns false if audio is not running
+ * yet (the first touch of a visit).
+ */
+export function tapDown(midiNumber: number): boolean {
+  return !micBusy() && touchStart(midiNumber, referencePitch.value, envelope.value);
+}
+
+/** The finger lifted. `sounded` is what tapDown returned: if false, the note is played now as a short tap. */
+export function tapUp(midiNumber: number, sounded: boolean): void {
+  if (sounded) touchEnd(midiNumber);
+  else if (!micBusy()) void touchTap(midiNumber, referencePitch.value, envelope.value).catch(() => {});
+}
+
+/* ---------- Going to the background (A-9) ---------- */
+
+/**
+ * When the app is hidden (another tab, the home screen, the screen locking),
+ * all sound stops and the audio is thrown away. iOS can leave a backgrounded
+ * page's audio dead while still reporting it as running, so nothing is kept
+ * to come back to: the next tap builds fresh audio.
+ */
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'hidden') return;
+  releaseAllTouches();
+  stopPlaying();
+  stopMicCheck();
+  resetAudio();
+});
 
 /* ---------- Drone (A-5) ---------- */
 

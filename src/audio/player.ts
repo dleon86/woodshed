@@ -33,14 +33,17 @@ let context: AudioContext | undefined;
 let output: GainNode | undefined;
 /** Whether the current context has been running: only then does "not running" mean interrupted. */
 let hasRun = false;
+/** The context's clock against the wall clock when last checked, to notice a context that has stalled. */
+let lastCheck: { audio: number; wall: number } | undefined;
 
 function createContext(): AudioContext {
   const ctx = new AudioContext({ latencyHint: 'interactive' });
   hasRun = ctx.state === 'running';
+  lastCheck = undefined;
   ctx.addEventListener('statechange', () => {
     if (ctx === context && ctx.state === 'running') hasRun = true;
   });
-  // A compressor keeps several notes at once (harmonic intervals, later chords) from clipping.
+  // A compressor keeps several notes at once (harmonic intervals, chords from taps) from clipping.
   const compressor = ctx.createDynamicsCompressor();
   output = ctx.createGain();
   output.gain.value = 0.9;
@@ -48,36 +51,48 @@ function createContext(): AudioContext {
   return ctx;
 }
 
-/** Throw away the audio context. The next tap builds a fresh one. */
+/** Throw away the audio context. The next tap builds a fresh one (and restarts the drone if one was on). */
 export function resetAudio(): void {
   const old = context;
   context = undefined;
   output = undefined;
   hasRun = false;
+  lastCheck = undefined;
   playing = undefined;
   drone = undefined;
+  touches.clear();
   void old?.close().catch(() => {});
 }
 
 /**
+ * Whether the context can no longer be trusted (A-9). iOS interrupts a page's
+ * audio when the tab is left or the device sleeps. Sometimes it says so (the
+ * state leaves "running"); after a long sleep it can keep reporting "running"
+ * while its clock has stopped. Both count: a dead context is replaced, never
+ * waited on.
+ */
+function isStale(ctx: AudioContext): boolean {
+  if (hasRun && ctx.state !== 'running') return true;
+  if (ctx.state !== 'running') return false; // still starting
+  const now = { audio: ctx.currentTime, wall: performance.now() / 1000 };
+  const previous = lastCheck;
+  lastCheck = now;
+  // Half a second of real time with a clock that did not move: stalled.
+  return !!previous && now.wall - previous.wall > 0.5 && now.audio - previous.audio < 0.05;
+}
+
+/**
  * The shared audio context. Call from inside a tap (A-7): browsers refuse to
- * start audio from page load.
- *
- * iOS interrupts a page's audio when the tab is left or the device sleeps,
- * and a context in that state may never resume. So a context that is not
- * running is replaced, not waited on: a new one made inside a tap always
- * starts. A drone that was sounding is restarted on the new context.
+ * start audio from page load. A new context made inside a tap always starts,
+ * which is why a stale one is replaced here.
  */
 export async function audioContext(): Promise<AudioContext> {
-  if (context && hasRun && context.state !== 'running') {
-    const droning = droneSpec;
-    resetAudio();
-    context = createContext();
-    if (droning) void startDrone(droning.midi, droning.reference);
-  }
+  if (context && isStale(context)) resetAudio();
   if (!context) {
     setAudioSession('playback');
     context = createContext();
+    // A drone that was sounding before the audio was lost carries on.
+    if (droneSpec) void startDrone(droneSpec.midi, droneSpec.reference);
   }
   const ctx = context;
   // A new context can report "suspended" for a moment even inside a tap.
@@ -96,32 +111,17 @@ export function listeningContext(): AudioContext {
   return context;
 }
 
-/* ---------- The piano-like voice (A-4) ---------- */
+/* ---------- Voices (A-4) ---------- */
 
-interface Voice {
-  stop(at: number): void;
-}
-
-/**
- * One note: a few sine partials with a fast attack and a decay that is
- * quicker for high notes, as on a piano. The upper partials also make low
- * bass notes audible on phone speakers that cannot reproduce 41 Hz.
- */
-function voice(ctx: AudioContext, out: AudioNode, midi: number, start: number, duration: number, reference: number): Voice {
-  const hz = midiToFrequency(midi, reference);
-  const gain = ctx.createGain();
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.value = Math.min(12000, hz * 8);
-  gain.connect(filter).connect(out);
-
+/** The partials of one note. The upper ones keep low bass notes audible on phone speakers that cannot reproduce 41 Hz. */
+function oscillatorsFor(ctx: AudioContext, into: AudioNode, midi: number, hz: number, start: number): OscillatorNode[] {
   const partials: Array<[number, number, OscillatorType]> = [
     [1, 1, 'triangle'],
     [2, 0.4, 'sine'],
     [3, 0.18, 'sine'],
     [4, midi < 45 ? 0.15 : 0.05, 'sine'],
   ];
-  const oscillators = partials
+  return partials
     .filter(([multiple]) => hz * multiple < ctx.sampleRate / 2.2)
     .map(([multiple, level, type]) => {
       const osc = ctx.createOscillator();
@@ -129,17 +129,40 @@ function voice(ctx: AudioContext, out: AudioNode, midi: number, start: number, d
       osc.type = type;
       osc.frequency.value = hz * multiple;
       g.gain.value = level;
-      osc.connect(g).connect(gain);
+      osc.connect(g).connect(into);
       osc.start(start);
       return osc;
     });
+}
 
-  const peak = 0.3;
+function voiceChain(ctx: AudioContext, out: AudioNode, hz: number): GainNode {
+  const gain = ctx.createGain();
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = Math.min(12000, hz * 8);
+  gain.connect(filter).connect(out);
+  return gain;
+}
+
+const PEAK = 0.3;
+
+interface Voice {
+  stop(at: number): void;
+}
+
+/**
+ * A note of fixed length, for Play: a fast attack and a decay that is quicker
+ * for high notes, as on a piano.
+ */
+function voice(ctx: AudioContext, out: AudioNode, midi: number, start: number, duration: number, reference: number): Voice {
+  const hz = midiToFrequency(midi, reference);
+  const gain = voiceChain(ctx, out, hz);
+  const oscillators = oscillatorsFor(ctx, gain, midi, hz, start);
+
   const decay = Math.max(0.6, 3.2 - (midi - 28) * 0.035); // seconds to fade: long for bass, short for treble
-  const end = start + duration;
   gain.gain.setValueAtTime(0, start);
-  gain.gain.linearRampToValueAtTime(peak, start + 0.008);
-  gain.gain.setTargetAtTime(peak * 0.08, start + 0.008, decay / 3);
+  gain.gain.linearRampToValueAtTime(PEAK, start + 0.008);
+  gain.gain.setTargetAtTime(PEAK * 0.08, start + 0.008, decay / 3);
 
   const stop = (at: number) => {
     const t = Math.max(at, ctx.currentTime);
@@ -147,33 +170,82 @@ function voice(ctx: AudioContext, out: AudioNode, midi: number, start: number, d
     gain.gain.setTargetAtTime(0, t, 0.04); // a short release avoids a click
     for (const osc of oscillators) osc.stop(t + 0.4);
   };
-  stop(end);
+  stop(start + duration);
   return { stop };
 }
 
-/* ---------- Single notes from taps (V-7) ---------- */
+/* ---------- Notes held by touch (V-7) ---------- */
+
+/** The shape of a touched note: seconds to rise, seconds to settle, the level held (0–1), seconds to fade. */
+export interface Envelope {
+  readonly attack: number;
+  readonly decay: number;
+  readonly sustain: number;
+  readonly release: number;
+}
+
+export const ENVELOPE_RANGE = {
+  attack: { min: 0.005, max: 0.5, default: 0.01 },
+  decay: { min: 0.05, max: 2, default: 0.5 },
+  sustain: { min: 0, max: 1, default: 0.5 },
+  release: { min: 0.03, max: 3, default: 0.3 },
+} as const;
+
+/** Notes sounding under fingers, by MIDI number. */
+const touches = new Map<number, { release(): void }>();
+
+function touchVoice(ctx: AudioContext, midi: number, reference: number, env: Envelope): { release(): void } {
+  const hz = midiToFrequency(midi, reference);
+  const gain = voiceChain(ctx, output!, hz);
+  const start = ctx.currentTime + 0.005;
+  const oscillators = oscillatorsFor(ctx, gain, midi, hz, start);
+  gain.gain.setValueAtTime(0, start);
+  gain.gain.linearRampToValueAtTime(PEAK, start + env.attack);
+  gain.gain.setTargetAtTime(PEAK * env.sustain, start + env.attack, env.decay / 3);
+  return {
+    release() {
+      // Let even the quickest tap reach its attack before it fades.
+      const t = Math.max(ctx.currentTime, start + env.attack);
+      gain.gain.cancelScheduledValues(t);
+      gain.gain.setTargetAtTime(0, t, env.release / 3);
+      for (const osc of oscillators) osc.stop(t + env.release * 2 + 0.1);
+    },
+  };
+}
 
 /**
- * Sound one note now, on top of anything else sounding, so several taps make
- * a chord. Returns false when audio has not been started yet: a touch going
- * down does not count as a tap for the browser's autoplay rule, so the caller
- * tries again when the finger lifts.
+ * A finger went down on a note: it sounds until touchEnd, on top of anything
+ * else sounding, so several fingers make a chord. Returns false when audio
+ * is not running yet: a touch going down does not count as a tap for the
+ * browser's autoplay rule, so the caller sounds the note when the finger lifts.
  */
-export function tapNote(midi: number, reference: number): boolean {
+export function touchStart(midi: number, reference: number, env: Envelope): boolean {
   if (!audioSupported) return false;
-  if (!context || context.state !== 'running') {
+  if (!context || context.state !== 'running' || isStale(context)) {
     void audioContext().catch(() => {});
     return false;
   }
-  voice(context, output!, midi, context.currentTime + 0.005, 1.4, reference);
+  touches.get(midi)?.release();
+  touches.set(midi, touchVoice(context, midi, reference, env));
   return true;
 }
 
-/** Sound a note as soon as audio is running. Call when the finger lifts: that is a real tap, so audio may start. */
-export async function tapNoteWhenReady(midi: number, reference: number): Promise<void> {
+/** The finger lifted: the note fades over its release time. */
+export function touchEnd(midi: number): void {
+  touches.get(midi)?.release();
+  touches.delete(midi);
+}
+
+export function releaseAllTouches(): void {
+  for (const midi of [...touches.keys()]) touchEnd(midi);
+}
+
+/** A short note for a touch that could not sound on the way down. Call when the finger lifts: that is a real tap, so audio may start. */
+export async function touchTap(midi: number, reference: number, env: Envelope): Promise<void> {
   if (!audioSupported) return;
   const ctx = await audioContext();
-  voice(ctx, output!, midi, ctx.currentTime + 0.005, 1.4, reference);
+  const note = touchVoice(ctx, midi, reference, env);
+  setTimeout(() => note.release(), (env.attack + 0.15) * 1000);
 }
 
 /* ---------- Playback ---------- */
